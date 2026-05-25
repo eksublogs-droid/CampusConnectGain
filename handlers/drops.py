@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 import database as db
 from utils import (
-    generate_vcf, generate_reference, create_paystack_payment,
+    generate_vcf, generate_reference, create_virtual_account, format_payment_message,
     drop_tier_keyboard, main_menu_keyboard
 )
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -86,7 +86,6 @@ async def handle_drop_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 
     if data == "drop:free":
         db.subscribe_drop(user_id, 'free')
-        # Send current free drop immediately
         recent_users = db.get_recent_users(days=3)
         if recent_users:
             vcf_data = generate_vcf(recent_users)
@@ -109,35 +108,32 @@ async def handle_drop_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             await query.message.reply_text("✅ Subscribed! No new students in the last 3 days, but you'll get the next drop automatically.")
 
     elif data == "drop:premium":
-        user = db.get_user(user_id)
         reference = generate_reference("DROP", user_id)
-        fake_email = f"user{user_id}@campusconnect.ng"
         try:
-            pay_url, ref = create_paystack_payment(
-                fake_email, 500, reference,
-                metadata={'type': 'drop', 'tier': 'premium', 'user_id': user_id}
+            acct = create_virtual_account(
+                tx_ref=reference,
+                amount=500,
+                narration="CampusConnect Premium Contact Drop",
+                meta={'type': 'drop', 'tier': 'premium', 'user_id': user_id}
             )
             await query.message.reply_text(
-                "⭐ *Premium Contact Drop — ₦500*\n\n"
-                "You'll receive the full student database as VCF!\n\n"
-                "Pay below to get your first drop immediately:",
+                format_payment_message(acct, "⭐ Premium Contact Drop"),
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("💳 Pay ₦500", url=pay_url)],
-                    [InlineKeyboardButton("✅ I've Paid — Verify", callback_data=f"drop:verify:{ref}")]
+                    [InlineKeyboardButton("✅ Check Payment", callback_data=f"drop:verify:{reference}")]
                 ])
             )
         except Exception as e:
-            await query.message.reply_text(f"❌ Payment setup failed. Try again.")
+            print(f"Drop payment error: {e}")
+            await query.message.reply_text("❌ Payment setup failed. Try again.")
 
     elif data.startswith("drop:verify:"):
         reference = data.split("drop:verify:")[1]
-        from utils import verify_paystack_payment
-        paid, info = verify_paystack_payment(reference)
+        from utils import verify_flw_payment
+        paid, info = verify_flw_payment(reference)
         if paid:
             db.subscribe_drop(user_id, 'premium')
             db.log_revenue(user_id, 'drop_premium', 500, reference)
-            # Send full VCF
             all_users = db.get_all_users()
             if all_users:
                 vcf_data = generate_vcf(all_users)
@@ -158,9 +154,9 @@ async def handle_drop_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             await query.message.reply_text("✅ Premium drop activated! Check DMs for your VCF.", reply_markup=main_menu_keyboard())
         else:
             await query.message.reply_text(
-                "❌ Payment not confirmed yet.",
+                "⏳ Payment not received yet.\n\nMake sure you transferred exactly ₦500, then try again.",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔄 Try Again", callback_data=f"drop:verify:{reference}")]
+                    [InlineKeyboardButton("🔄 Check Again", callback_data=f"drop:verify:{reference}")]
                 ])
             )
 
@@ -169,7 +165,6 @@ async def run_scheduled_drop(bot):
     """Called by scheduler every 3 days"""
     print("Running scheduled contact drop...")
 
-    # Free drop — new students
     free_subs = db.get_drop_subscribers('free')
     recent_users = db.get_recent_users(days=3)
 
@@ -193,7 +188,6 @@ async def run_scheduled_drop(bot):
             except Exception as e:
                 print(f"Drop failed for {sub['user_id']}: {e}")
 
-    # Premium drop — full DB
     premium_subs = db.get_drop_subscribers('premium')
     all_users = db.get_all_users()
 
