@@ -7,7 +7,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import database as db
 from utils import (
-    generate_reference, create_paystack_payment,
+    generate_reference, create_virtual_account, format_payment_message,
     store_category_keyboard, cancel_keyboard, main_menu_keyboard
 )
 
@@ -111,34 +111,31 @@ async def handle_store_callback(update: Update, context: ContextTypes.DEFAULT_TY
             await query.message.reply_text("❌ Item not found or no longer available.")
             return
 
-        user = db.get_user(user_id)
         reference = generate_reference("ORD", user_id)
-        fake_email = f"user{user_id}@campusconnect.ng"
-
         try:
-            pay_url, ref = create_paystack_payment(
-                fake_email, item['price'], reference,
-                metadata={'type': 'store', 'item_id': item_id, 'user_id': user_id}
+            acct = create_virtual_account(
+                tx_ref=reference,
+                amount=item['price'],
+                narration=f"CampusConnect Store: {item['name']}",
+                meta={'type': 'store', 'item_id': item_id, 'user_id': user_id}
             )
-            db.create_order(user_id, item_id, item['item_type'], item['name'], item['price'], ref)
+            db.create_order(user_id, item_id, item['item_type'], item['name'], item['price'], reference)
 
             await query.message.reply_text(
-                f"💳 *Order: {item['name']}*\n\n"
-                f"Amount: ₦{item['price']:,}\n\n"
-                f"Click below to pay securely via Paystack. Your item will be delivered automatically after payment!",
+                format_payment_message(acct, f"Order: {item['name']}"),
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton(f"💳 Pay ₦{item['price']:,}", url=pay_url)],
-                    [InlineKeyboardButton("✅ I've Paid — Verify", callback_data=f"verifyorder:{ref}")]
+                    [InlineKeyboardButton("✅ Check Payment", callback_data=f"verifyorder:{reference}")]
                 ])
             )
         except Exception as e:
-            await query.message.reply_text(f"❌ Payment setup failed. Try again later.")
+            print(f"Store payment error: {e}")
+            await query.message.reply_text("❌ Payment setup failed. Try again later.")
 
     elif data.startswith("verifyorder:"):
         reference = data.split(":")[1]
-        from utils import verify_paystack_payment
-        paid, info = verify_paystack_payment(reference)
+        from utils import verify_flw_payment
+        paid, info = verify_flw_payment(reference)
         if paid:
             order = db.get_order_by_reference(reference)
             if order and order['status'] != 'paid':
@@ -149,7 +146,6 @@ async def handle_store_callback(update: Update, context: ContextTypes.DEFAULT_TY
                     f"You'll receive your item in this chat shortly!",
                     parse_mode="Markdown"
                 )
-                # Auto-deliver if file exists
                 item = db.get_store_item(order['item_id'])
                 if item and item.get('file_id'):
                     await context.bot.send_document(
@@ -164,7 +160,6 @@ async def handle_store_callback(update: Update, context: ContextTypes.DEFAULT_TY
                         user_id,
                         "📬 Your order is being prepared by our team. You'll receive it within 24 hours."
                     )
-                    # Notify admin
                     admin_ids = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x]
                     for admin_id in admin_ids:
                         try:
@@ -184,9 +179,9 @@ async def handle_store_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 await query.message.reply_text("✅ This order is already paid and being processed.")
         else:
             await query.message.reply_text(
-                "❌ Payment not found yet. Complete payment on Paystack first.",
+                "⏳ Payment not received yet.\n\nMake sure you transferred the exact amount, then try again.",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔄 Try Again", callback_data=f"verifyorder:{reference}")]
+                    [InlineKeyboardButton("🔄 Check Again", callback_data=f"verifyorder:{reference}")]
                 ])
             )
 
@@ -211,7 +206,6 @@ async def handle_custom_order_message(update: Update, context: ContextTypes.DEFA
             await update.message.reply_text("Cancelled.", reply_markup=main_menu_keyboard())
             return True
 
-        # Send to admin
         admin_ids = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x]
         user = db.get_user(user_id)
         for admin_id in admin_ids:
