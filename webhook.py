@@ -1,15 +1,13 @@
 """
-CampusConnect — Paystack Webhook Handler
+CampusConnect — Flutterwave Webhook Handler
 Runs alongside the bot on the same process via threading.
 """
 import os
-import hmac
-import hashlib
 import json
 import threading
 from flask import Flask, request, jsonify, send_from_directory
 import database as db
-from utils import verify_paystack_payment, AD_TIERS
+from utils import verify_flw_signature, AD_TIERS
 
 app = Flask(__name__)
 _bot_app = None  # set from main.py
@@ -27,64 +25,79 @@ def serve_register():
     return send_from_directory(WEBAPP_DIR, "register.html")
 
 
-@app.route("/webhook/paystack", methods=["POST"])
-def paystack_webhook():
-    secret = os.getenv("PAYSTACK_SECRET_KEY", "")
-    signature = request.headers.get("X-Paystack-Signature", "")
+@app.route("/webhook/flutterwave", methods=["POST"])
+def flutterwave_webhook():
+    signature = request.headers.get("verif-hash", "")
     payload = request.get_data()
 
-    # Verify signature
-    expected = hmac.new(secret.encode(), payload, hashlib.sha512).hexdigest()
-    if not hmac.compare_digest(expected, signature or ""):
+    if not verify_flw_signature(payload, signature):
         return jsonify({"status": "invalid signature"}), 400
 
-    event = json.loads(payload)
-    event_type = event.get("event")
+    try:
+        event = json.loads(payload)
+    except Exception:
+        return jsonify({"status": "bad json"}), 400
+
+    # Flutterwave sends event as top-level "event" key
+    event_type = event.get("event", "")
     data = event.get("data", {})
 
-    if event_type == "charge.success":
-        reference = data.get("reference")
-        metadata = data.get("metadata", {})
-        payment_type = metadata.get("type")
+    if event_type == "charge.completed" and data.get("status") == "successful":
+        tx_ref = data.get("tx_ref", "")
+        meta = data.get("meta") or {}
+
+        payment_type = meta.get("type") or _infer_type_from_ref(tx_ref)
 
         if payment_type == "ad":
-            handle_ad_payment(reference, metadata)
+            handle_ad_payment(tx_ref, data, meta)
         elif payment_type == "store":
-            handle_store_payment(reference, metadata)
+            handle_store_payment(tx_ref, data, meta)
         elif payment_type == "drop":
-            handle_drop_payment(reference, metadata)
+            handle_drop_payment(tx_ref, data, meta)
 
     return jsonify({"status": "ok"}), 200
 
 
-def handle_ad_payment(reference, metadata):
-    ad = db.get_ad_by_reference(reference)
+def _infer_type_from_ref(tx_ref: str) -> str:
+    """Fallback: infer payment type from reference prefix."""
+    prefix = tx_ref.split("_")[0].upper()
+    if prefix == "AD":
+        return "ad"
+    if prefix == "ORD":
+        return "store"
+    if prefix == "DROP":
+        return "drop"
+    return ""
+
+
+def handle_ad_payment(tx_ref: str, data: dict, meta: dict):
+    ad = db.get_ad_by_reference(tx_ref)
     if not ad or ad['status'] != 'pending':
         return
     user_id = ad['user_id']
     tier = ad['tier']
-    db.log_revenue(user_id, f"ad_{tier}", AD_TIERS.get(tier, {}).get('price', 0), reference)
+    db.log_revenue(user_id, f"ad_{tier}", AD_TIERS.get(tier, {}).get('price', 0), tx_ref)
     with db.db() as cur:
-        cur.execute("UPDATE ads SET status='paid' WHERE paystack_reference=%s", (reference,))
-    print(f"✅ Ad payment confirmed: {reference}")
+        cur.execute("UPDATE ads SET status='paid' WHERE paystack_reference=%s", (tx_ref,))
+    print(f"✅ Ad payment confirmed: {tx_ref}")
 
 
-def handle_store_payment(reference, metadata):
-    order = db.get_order_by_reference(reference)
+def handle_store_payment(tx_ref: str, data: dict, meta: dict):
+    order = db.get_order_by_reference(tx_ref)
     if not order or order['status'] == 'paid':
         return
-    db.fulfill_order(reference)
-    db.log_revenue(order['user_id'], 'store', order['amount'], reference)
-    print(f"✅ Store payment confirmed: {reference}")
+    db.fulfill_order(tx_ref)
+    db.log_revenue(order['user_id'], 'store', order['amount'], tx_ref)
+    print(f"✅ Store payment confirmed: {tx_ref}")
 
 
-def handle_drop_payment(reference, metadata):
-    user_id = metadata.get('user_id')
-    tier = metadata.get('tier', 'premium')
+def handle_drop_payment(tx_ref: str, data: dict, meta: dict):
+    user_id = meta.get('user_id')
+    tier = meta.get('tier', 'premium')
     if user_id:
         db.subscribe_drop(int(user_id), tier)
-        db.log_revenue(int(user_id), f'drop_{tier}', 500, reference)
-    print(f"✅ Drop payment confirmed: {reference}")
+        db.log_revenue(int(user_id), f'drop_{tier}', 500, tx_ref)
+    print(f"✅ Drop payment confirmed: {tx_ref}")
 
 
 @app.route("/health", methods=["GET"])
