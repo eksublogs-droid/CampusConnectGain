@@ -160,7 +160,6 @@ CREATE INDEX IF NOT EXISTS idx_ads_status ON ads(status);
 CREATE INDEX IF NOT EXISTS idx_ads_expires ON ads(expires_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_reference ON orders(paystack_reference);
-CREATE INDEX IF NOT EXISTS idx_users_dob ON users(date_of_birth);
 """
 
 # Run once on existing databases to add new columns
