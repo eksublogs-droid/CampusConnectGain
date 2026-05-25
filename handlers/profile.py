@@ -1,24 +1,28 @@
 """
 CampusConnect — Profile Management
 """
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
+from datetime import datetime
 import database as db
 from utils import (
     format_profile_card, NIGERIAN_STATES, LEVELS, INTERESTS,
-    validate_phone, states_keyboard, levels_keyboard,
+    validate_phone, format_whatsapp, states_keyboard, levels_keyboard,
     interests_keyboard, cancel_keyboard, main_menu_keyboard
 )
 
 EDITABLE_FIELDS = {
     "1": ("full_name", "👤 Full Name"),
     "2": ("phone", "📱 Phone Number"),
-    "3": ("school", "🏫 School"),
-    "4": ("department", "📚 Department"),
-    "5": ("level", "🎯 Level"),
-    "6": ("state", "📍 State"),
-    "7": ("interests", "🌟 Interests"),
-    "8": ("bio", "💬 Bio"),
+    "3": ("whatsapp_number", "💬 WhatsApp Number"),
+    "4": ("school", "🏫 School"),
+    "5": ("department", "📚 Department"),
+    "6": ("level", "🎯 Level"),
+    "7": ("state", "📍 State"),
+    "8": ("interests", "🌟 Interests"),
+    "9": ("bio", "💬 Bio"),
+    "10": ("date_of_birth", "🎂 Date of Birth"),
+    "11": ("show_whatsapp", "👁️ Show WhatsApp to Others"),
 }
 
 
@@ -29,7 +33,7 @@ async def cmd_myprofile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ You're not registered yet. Send /start to join!")
         return
 
-    card = format_profile_card(user)
+    card = format_profile_card(user, is_own_profile=True)
     stats_msg = ""
     
     await update.message.reply_text(
@@ -75,7 +79,7 @@ async def handle_edit_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if step == "choose_field":
         if text not in EDITABLE_FIELDS:
-            await update.message.reply_text("❌ Invalid choice. Send a number 1–8:")
+            await update.message.reply_text("❌ Invalid choice. Send a number 1–11:")
             return True
         field_key, field_label = EDITABLE_FIELDS[text]
         db.set_state(user_id, f"edit:value:{field_key}", {})
@@ -92,6 +96,18 @@ async def handle_edit_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🌟 *Edit Interests*\nCurrent: {', '.join(current) or 'none'}\n\nTap to add/remove, then ✅ Done:",
                 parse_mode="Markdown",
                 reply_markup=interests_keyboard()
+            )
+        elif field_key == "show_whatsapp":
+            user = db.get_user(user_id)
+            current = user.get('show_whatsapp', True)
+            status = "✅ visible to everyone" if current else "🔒 hidden (Contact on request)"
+            await update.message.reply_text(
+                f"👁️ *WhatsApp Visibility*\n\nCurrent: {status}\n\n"
+                "Reply *yes* to make it public, or *no* to hide it:",
+                parse_mode="Markdown",
+                reply_markup=ReplyKeyboardMarkup(
+                    [["yes", "no"], ["❌ Cancel"]], resize_keyboard=True, one_time_keyboard=True
+                )
             )
         else:
             await update.message.reply_text(f"Enter new {field_label}:", reply_markup=cancel_keyboard())
@@ -176,6 +192,31 @@ async def _save_edit(update, user_id, field_key, text, data):
             await update.message.reply_text("❌ Bio too long (max 200 chars).")
             return True
         value = text
+
+    elif field_key == "whatsapp_number":
+        value = format_whatsapp(text)
+        if not value:
+            await update.message.reply_text("❌ Invalid WhatsApp number. Use 08012345678 format:")
+            return True
+
+    elif field_key == "date_of_birth":
+        try:
+            dob = datetime.strptime(text, "%Y-%m-%d").date()
+            if dob.year < 1980 or dob > datetime.today().date():
+                raise ValueError
+            value = text
+        except ValueError:
+            await update.message.reply_text("❌ Use format YYYY-MM-DD, e.g. 2000-05-15:")
+            return True
+
+    elif field_key == "show_whatsapp":
+        if text.lower() in ("yes", "true", "1"):
+            value = True
+        elif text.lower() in ("no", "false", "0"):
+            value = False
+        else:
+            await update.message.reply_text("❌ Reply *yes* or *no*:", parse_mode="Markdown")
+            return True
 
     else:
         value = text
