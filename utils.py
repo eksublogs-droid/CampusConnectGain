@@ -4,14 +4,17 @@ CampusConnect — Utilities
 import os
 import io
 import json
+import time
+import hmac
+import hashlib
 import requests
 import tempfile
 import vobject
 import openpyxl
 from datetime import datetime
 
-PAYSTACK_SECRET = os.getenv("PAYSTACK_SECRET_KEY", "")
-PAYSTACK_BASE = "https://api.paystack.co"
+FLW_SECRET = os.getenv("FLW_SECRET_KEY", "")
+FLW_BASE = "https://api.flutterwave.com/v3"
 
 NIGERIAN_STATES = [
     "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
@@ -42,14 +45,9 @@ AD_TIERS = {
 # ────────────────────────────────────────
 
 def format_profile_card(user, viewer_id=None, is_own_profile=False):
-    """
-    viewer_id: the Telegram ID of the person viewing the card
-    is_own_profile: True when the user is viewing their own profile
-    """
     interests_str = ", ".join(user.get('interests') or []) or "—"
     bio = user.get('bio') or "—"
 
-    # WhatsApp visibility logic
     whatsapp = user.get('whatsapp_number') or user.get('phone')
     show_wa = user.get('show_whatsapp', True)
     owner_viewing = is_own_profile or (viewer_id is not None and viewer_id == user.get('id'))
@@ -165,39 +163,84 @@ def generate_excel(users: list) -> bytes:
 
 
 # ────────────────────────────────────────
-# PAYSTACK
+# FLUTTERWAVE — VIRTUAL ACCOUNT
 # ────────────────────────────────────────
 
-def create_paystack_payment(email: str, amount_naira: int, reference: str, callback_url: str = None, metadata: dict = None):
-    headers = {"Authorization": f"Bearer {PAYSTACK_SECRET}", "Content-Type": "application/json"}
-    payload = {
-        "email": email,
-        "amount": amount_naira * 100,
-        "reference": reference,
-        "currency": "NGN",
-        "metadata": metadata or {}
+def create_virtual_account(tx_ref: str, amount: int, narration: str, meta: dict = None) -> dict:
+    """
+    Create a temporary virtual account via Flutterwave.
+    Returns dict with: account_number, bank_name, tx_ref, expires_at
+    """
+    headers = {
+        "Authorization": f"Bearer {FLW_SECRET}",
+        "Content-Type": "application/json"
     }
-    if callback_url:
-        payload["callback_url"] = callback_url
-    r = requests.post(f"{PAYSTACK_BASE}/transaction/initialize", headers=headers, json=payload)
+    payload = {
+        "email": f"pay+{tx_ref}@campusconnect.ng",
+        "amount": amount,
+        "currency": "NGN",
+        "tx_ref": tx_ref,
+        "narration": narration,
+        "is_permanent": False,
+        "meta": meta or {}
+    }
+    r = requests.post(f"{FLW_BASE}/virtual-account-numbers", headers=headers, json=payload, timeout=15)
     data = r.json()
-    if data.get("status"):
-        return data["data"]["authorization_url"], data["data"]["reference"]
-    raise Exception(f"Paystack error: {data.get('message')}")
+    if data.get("status") == "success":
+        d = data["data"]
+        return {
+            "account_number": d["account_number"],
+            "bank_name": d["bank_name"],
+            "tx_ref": tx_ref,
+            "flw_ref": d.get("flw_ref", ""),
+            "amount": amount,
+        }
+    raise Exception(f"Flutterwave error: {data.get('message', 'Unknown error')}")
 
 
-def verify_paystack_payment(reference: str):
-    headers = {"Authorization": f"Bearer {PAYSTACK_SECRET}"}
-    r = requests.get(f"{PAYSTACK_BASE}/transaction/verify/{reference}", headers=headers)
+def verify_flw_payment(tx_ref: str) -> tuple[bool, dict]:
+    """Verify a Flutterwave payment by tx_ref."""
+    headers = {"Authorization": f"Bearer {FLW_SECRET}"}
+    r = requests.get(
+        f"{FLW_BASE}/transactions",
+        headers=headers,
+        params={"tx_ref": tx_ref},
+        timeout=15
+    )
     data = r.json()
-    if data.get("status") and data["data"]["status"] == "success":
-        return True, data["data"]
-    return False, data.get("message", "Payment not verified")
+    if data.get("status") == "success":
+        txns = data.get("data", [])
+        for txn in txns:
+            if txn.get("status") == "successful":
+                return True, txn
+    return False, {}
 
 
-def generate_reference(prefix: str, user_id: int):
-    import time
+def verify_flw_signature(payload: bytes, signature: str) -> bool:
+    """Verify Flutterwave webhook signature."""
+    secret_hash = os.getenv("FLW_WEBHOOK_SECRET", "")
+    if not secret_hash:
+        return True  # skip if not configured
+    expected = hmac.new(secret_hash.encode(), payload, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature or "")
+
+
+def generate_reference(prefix: str, user_id: int) -> str:
     return f"{prefix}_{user_id}_{int(time.time())}"
+
+
+def format_payment_message(acct: dict, description: str) -> str:
+    """Format the bank transfer instruction message sent to user."""
+    return (
+        f"🏦 *Pay via Bank Transfer*\n\n"
+        f"📋 {description}\n\n"
+        f"*Amount:* ₦{acct['amount']:,}\n"
+        f"*Bank:* {acct['bank_name']}\n"
+        f"*Account Number:* `{acct['account_number']}`\n\n"
+        f"⏱ Transfer exactly ₦{acct['amount']:,} to the account above.\n"
+        f"✅ Payment is confirmed automatically once received.\n\n"
+        f"_Use the button below to check if payment was received._"
+    )
 
 
 # ────────────────────────────────────────
@@ -245,7 +288,6 @@ def sync_to_google_sheets(users: list):
 _rate_limit = {}
 
 def check_rate_limit(user_id: int, action: str, max_per_minute: int = 10) -> bool:
-    import time
     key = f"{user_id}:{action}"
     now = time.time()
     window = _rate_limit.get(key, [])
@@ -269,7 +311,6 @@ def validate_phone(phone: str):
 
 
 def format_whatsapp(number: str) -> str | None:
-    """Normalize a WhatsApp number to +234XXXXXXXXXX format."""
     return validate_phone(number)
 
 
