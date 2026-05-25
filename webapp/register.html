@@ -291,6 +291,68 @@
     <input type="text" id="department" placeholder="e.g. Computer Science" maxlength="80" />
     <div class="err-msg" id="err-dept">Department must be at least 2 characters</div>
   </div>
+
+  <div class="field">
+    <label>Level <span class="req">*</span></label>
+    <select id="level">
+      <option value="">— Select Level —</option>
+      <option>100 Level</option>
+      <option>200 Level</option>
+      <option>300 Level</option>
+      <option>400 Level</option>
+      <option>500 Level</option>
+      <option>600 Level</option>
+      <option>Postgraduate</option>
+    </select>
+    <div class="err-msg" id="err-level">Please select your current level</div>
+  </div>
+</div>
+
+<!-- Location -->
+<div class="card">
+  <div class="card-title">Location</div>
+  <div class="field">
+    <label>State of Origin <span class="req">*</span></label>
+    <select id="state">
+      <option value="">— Select State —</option>
+      <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option>
+      <option>Anambra</option><option>Bauchi</option><option>Bayelsa</option>
+      <option>Benue</option><option>Borno</option><option>Cross River</option>
+      <option>Delta</option><option>Ebonyi</option><option>Edo</option>
+      <option>Ekiti</option><option>Enugu</option><option>FCT</option>
+      <option>Gombe</option><option>Imo</option><option>Jigawa</option>
+      <option>Kaduna</option><option>Kano</option><option>Katsina</option>
+      <option>Kebbi</option><option>Kogi</option><option>Kwara</option>
+      <option>Lagos</option><option>Nasarawa</option><option>Niger</option>
+      <option>Ogun</option><option>Ondo</option><option>Osun</option>
+      <option>Oyo</option><option>Plateau</option><option>Rivers</option>
+      <option>Sokoto</option><option>Taraba</option><option>Yobe</option>
+      <option>Zamfara</option>
+    </select>
+    <div class="err-msg" id="err-state">Please select your state</div>
+  </div>
+</div>
+
+<!-- Interests -->
+<div class="card">
+  <div class="card-title">Interests <span style="color:var(--muted);font-weight:400;font-size:12px">(pick 1–5)</span></div>
+  <div class="field">
+    <div id="interests-grid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    <div class="err-msg" id="err-interests">Please select at least one interest</div>
+  </div>
+</div>
+
+<!-- Bio -->
+<div class="card">
+  <div class="card-title">Bio</div>
+  <div class="field">
+    <label>Short Bio <span style="color:var(--muted);font-weight:400">(optional, max 200 chars)</span></label>
+    <textarea id="bio" placeholder="e.g. Tech enthusiast, building the next big app. Open to collabs!" maxlength="200"
+      style="width:100%;padding:11px 13px;background:#0e1117;border:1px solid var(--border);border-radius:8px;
+             color:var(--text);font-size:15px;outline:none;resize:vertical;min-height:72px;
+             font-family:inherit;transition:border-color 0.2s;"></textarea>
+    <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:3px"><span id="bio-count">0</span>/200</div>
+  </div>
 </div>
 
 <button id="submit-btn">Join CampusConnect 🚀</button>
@@ -304,6 +366,44 @@
 
   // ── DOB max = today ──
   document.getElementById('date_of_birth').max = new Date().toISOString().split('T')[0];
+
+  // ── Interests ──
+  const INTERESTS = [
+    "Tech & Coding","Business & Entrepreneurship","Music","Art & Design",
+    "Sports","Gaming","Writing & Blogging","Photography","Movies & TV",
+    "Fashion","Science & Research","Politics & Law","Health & Fitness",
+    "Travel","Food & Cooking","Finance & Investing"
+  ];
+  let selectedInterests = [];
+  const grid = document.getElementById('interests-grid');
+  INTERESTS.forEach(interest => {
+    const chip = document.createElement('div');
+    chip.textContent = interest;
+    chip.dataset.value = interest;
+    chip.style.cssText = `padding:7px 12px;border-radius:20px;font-size:13px;cursor:pointer;
+      border:1px solid var(--border);background:#0e1117;color:var(--muted);transition:all 0.15s;`;
+    chip.addEventListener('click', () => {
+      if (selectedInterests.includes(interest)) {
+        selectedInterests = selectedInterests.filter(i => i !== interest);
+        chip.style.background = '#0e1117';
+        chip.style.color = 'var(--muted)';
+        chip.style.borderColor = 'var(--border)';
+      } else {
+        if (selectedInterests.length >= 5) { showToast('⚠️ Max 5 interests'); return; }
+        selectedInterests.push(interest);
+        chip.style.background = 'var(--accent)';
+        chip.style.color = 'white';
+        chip.style.borderColor = 'var(--accent)';
+      }
+      clearError('interests-grid', 'err-interests');
+    });
+    grid.appendChild(chip);
+  });
+
+  // ── Bio counter ──
+  const bioEl = document.getElementById('bio');
+  const bioCount = document.getElementById('bio-count');
+  bioEl.addEventListener('input', () => { bioCount.textContent = bioEl.value.length; });
 
   // ── Nigerian Universities ──
   const SCHOOLS = [
@@ -457,6 +557,22 @@
       showError('department', 'err-dept'); valid = false;
     } else clearError('department', 'err-dept');
 
+    const level = document.getElementById('level').value;
+    if (!level) {
+      showError('level', 'err-level'); valid = false;
+    } else clearError('level', 'err-level');
+
+    const state = document.getElementById('state').value;
+    if (!state) {
+      showError('state', 'err-state'); valid = false;
+    } else clearError('state', 'err-state');
+
+    if (selectedInterests.length === 0) {
+      document.getElementById('err-interests').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('err-interests').classList.remove('show');
+    }
+
     if (!valid) { showToast('⚠️ Please fix the errors above'); return; }
 
     const btn = document.getElementById('submit-btn');
@@ -470,6 +586,10 @@
       department: dept,
       date_of_birth: dob,
       show_whatsapp: document.getElementById('show_whatsapp').checked,
+      level: level,
+      state: state,
+      interests: selectedInterests,
+      bio: bioEl.value.trim(),
     };
 
     tg.sendData(JSON.stringify(payload));
