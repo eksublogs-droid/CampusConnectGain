@@ -106,7 +106,7 @@ def health():
 
 
 def run_webhook_server():
-    port = int(os.getenv("WEBHOOK_SERVER_PORT", 5000))
+    port = int(os.getenv("PORT", os.getenv("WEBHOOK_SERVER_PORT", 8080)))
     app.run(host="0.0.0.0", port=port, debug=False)
 
 
