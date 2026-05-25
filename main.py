@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # ── Import all handlers ──
 import database as db
-from handlers.registration import start_registration, handle_registration_step
+from handlers.registration import start_registration, handle_registration_step, handle_web_app_data
 from handlers.profile import cmd_myprofile, cmd_edit, handle_edit_flow
 from handlers.directory import (
     cmd_directory, cmd_findbyschool, cmd_findbydept,
@@ -325,6 +325,7 @@ def main():
 
     # Initialize DB
     db.init_db()
+    db.run_migrations()
 
     # ── Post-init hook ──
     async def post_init(application):
@@ -376,6 +377,9 @@ def main():
 
     # ── Callback Handler ──
     app.add_handler(CallbackQueryHandler(handle_callback))
+
+    # ── Web App Data Handler (Mini App form submission) ──
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
 
     # ── Message Handler ──
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
