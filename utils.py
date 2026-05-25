@@ -41,15 +41,32 @@ AD_TIERS = {
 # PROFILE CARD FORMATTING
 # ────────────────────────────────────────
 
-def format_profile_card(user, show_contact=True):
+def format_profile_card(user, viewer_id=None, is_own_profile=False):
+    """
+    viewer_id: the Telegram ID of the person viewing the card
+    is_own_profile: True when the user is viewing their own profile
+    """
     interests_str = ", ".join(user.get('interests') or []) or "—"
     bio = user.get('bio') or "—"
-    contact_line = f"📱 {user['phone']}" if show_contact else "📱 *Contact on request*"
+
+    # WhatsApp visibility logic
+    whatsapp = user.get('whatsapp_number') or user.get('phone')
+    show_wa = user.get('show_whatsapp', True)
+    owner_viewing = is_own_profile or (viewer_id is not None and viewer_id == user.get('id'))
+
+    if owner_viewing:
+        wa_line = f"💬 WhatsApp: {whatsapp}"
+    elif show_wa:
+        wa_line = f"💬 WhatsApp: {whatsapp}"
+    else:
+        wa_line = "💬 WhatsApp: _Contact on request_"
+
     return (
         f"👤 *{user['full_name']}*\n"
         f"🎓 {user['school']} · {user['department']} · {user['level']}\n"
         f"📍 {user['state']}\n"
-        f"{contact_line}\n"
+        f"📱 {user['phone']}\n"
+        f"{wa_line}\n"
         f"🌟 Interests: {interests_str}\n"
         f"💬 {bio}"
     )
@@ -117,7 +134,11 @@ def generate_excel(users: list) -> bytes:
     ws = wb.active
     ws.title = "CampusConnect Students"
 
-    headers = ["ID", "Full Name", "Username", "Phone", "School", "Department", "Level", "State", "Interests", "Bio", "Registered At"]
+    headers = [
+        "ID", "Full Name", "Username", "Phone", "WhatsApp", "Date of Birth",
+        "Show WhatsApp", "School", "Department", "Level", "State",
+        "Interests", "Bio", "Registered At"
+    ]
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = openpyxl.styles.Font(bold=True)
@@ -127,13 +148,16 @@ def generate_excel(users: list) -> bytes:
         ws.cell(row=row_idx, column=2, value=user['full_name'])
         ws.cell(row=row_idx, column=3, value=user.get('username') or "")
         ws.cell(row=row_idx, column=4, value=user['phone'])
-        ws.cell(row=row_idx, column=5, value=user['school'])
-        ws.cell(row=row_idx, column=6, value=user['department'])
-        ws.cell(row=row_idx, column=7, value=user['level'])
-        ws.cell(row=row_idx, column=8, value=user['state'])
-        ws.cell(row=row_idx, column=9, value=", ".join(user.get('interests') or []))
-        ws.cell(row=row_idx, column=10, value=user.get('bio') or "")
-        ws.cell(row=row_idx, column=11, value=str(user['registered_at']))
+        ws.cell(row=row_idx, column=5, value=user.get('whatsapp_number') or "")
+        ws.cell(row=row_idx, column=6, value=str(user.get('date_of_birth') or ""))
+        ws.cell(row=row_idx, column=7, value="Yes" if user.get('show_whatsapp', True) else "No")
+        ws.cell(row=row_idx, column=8, value=user['school'])
+        ws.cell(row=row_idx, column=9, value=user['department'])
+        ws.cell(row=row_idx, column=10, value=user['level'])
+        ws.cell(row=row_idx, column=11, value=user['state'])
+        ws.cell(row=row_idx, column=12, value=", ".join(user.get('interests') or []))
+        ws.cell(row=row_idx, column=13, value=user.get('bio') or "")
+        ws.cell(row=row_idx, column=14, value=str(user['registered_at']))
 
     buffer = io.BytesIO()
     wb.save(buffer)
@@ -242,6 +266,20 @@ def validate_phone(phone: str):
     elif len(digits) == 10:
         return '+234' + digits
     return None
+
+
+def format_whatsapp(number: str) -> str | None:
+    """Normalize a WhatsApp number to +234XXXXXXXXXX format."""
+    return validate_phone(number)
+
+
+def format_birthday_message(user: dict) -> str:
+    name = user['full_name'].split()[0]
+    return (
+        f"🎂 *Happy Birthday, {name}!* 🎉\n\n"
+        f"CampusConnect wishes you an amazing day filled with joy!\n\n"
+        f"_Keep connecting, keep growing. 🚀_"
+    )
 
 
 # ────────────────────────────────────────
