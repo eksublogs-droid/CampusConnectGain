@@ -58,7 +58,10 @@ async def start_registration(update: Update, context: ContextTypes.DEFAULT_TYPE)
 # ── Receive Mini App data ──
 
 async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Called when the Mini App submits the form via sendData()."""
+    """Called when the Mini App submits the form via sendData().
+    Receives all fields at once and creates the account immediately —
+    no further chat steps needed.
+    """
     user_id = update.effective_user.id
 
     try:
@@ -74,6 +77,11 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
     department = (form.get("department") or "").strip()
     dob_str = (form.get("date_of_birth") or "").strip()
     show_wa = bool(form.get("show_whatsapp", True))
+    level = (form.get("level") or "").strip()
+    state = (form.get("state") or "").strip()
+    interests_raw = form.get("interests") or []
+    interests = [i.strip() for i in interests_raw if i.strip()] if isinstance(interests_raw, list) else []
+    bio = (form.get("bio") or "").strip()
 
     errors = []
     if len(name) < 3 or len(name) > 60:
@@ -97,25 +105,51 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
         except ValueError:
             errors.append("❌ Date of birth format invalid (YYYY-MM-DD)")
 
+    if level not in LEVELS:
+        errors.append("❌ Please select a valid level")
+    if state not in NIGERIAN_STATES:
+        errors.append("❌ Please select a valid state")
+    if not interests:
+        errors.append("❌ Please select at least one interest")
+    if len(bio) > 200:
+        errors.append("❌ Bio must be 200 characters or less")
+
     if errors:
         await update.message.reply_text("\n".join(errors) + "\n\nPlease open the form again.")
         return
 
-    # Store mini-app data, continue with level/state/interests/bio steps
-    db.set_state(user_id, "reg:level", {
-        "full_name": name,
-        "whatsapp_number": wa_number,
-        "phone": wa_number,   # phone mirrors whatsapp for backward compat
-        "school": school,
-        "department": department,
-        "date_of_birth": dob_str,
-        "show_whatsapp": show_wa,
-    })
+    if not bio:
+        bio = f"{department} student at {school}"
+
+    user_data = {
+        'id': user_id,
+        'username': update.effective_user.username,
+        'full_name': name,
+        'phone': wa_number,
+        'whatsapp_number': wa_number,
+        'date_of_birth': dob_str or None,
+        'show_whatsapp': show_wa,
+        'school': school,
+        'department': department,
+        'level': level,
+        'state': state,
+        'interests': interests,
+        'bio': bio,
+        'profile_photo_id': None,
+    }
+    db.create_user(user_data)
+    db.clear_state(user_id)
+
+    user_obj = db.get_user(user_id)
+    from utils import format_profile_card
+    card = format_profile_card(user_obj, is_own_profile=True)
 
     await update.message.reply_text(
-        f"✅ Got it, *{name}*!\n\n🎯 *Select your current level:*",
+        f"🎉 *Welcome to CampusConnect, {name}!*\n\n"
+        f"Your profile is live! Here's how it looks:\n\n{card}\n\n"
+        f"You're now part of Nigeria's student network. Use the menu below to explore! 🚀",
         parse_mode="Markdown",
-        reply_markup=levels_keyboard()
+        reply_markup=main_menu_keyboard()
     )
 
 
