@@ -1,6 +1,6 @@
 """
 CampusConnect — Job Scheduler
-Handles: 3-day contact drops, ad expiry
+Handles: 3-day contact drops, ad expiry, birthday messages, sheets sync
 """
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import database as db
@@ -41,6 +41,16 @@ def start_scheduler(bot):
         id='sheets_sync'
     )
 
+    # Birthday messages daily at 8 AM
+    _scheduler.add_job(
+        _send_birthday_messages,
+        'cron',
+        hour=8,
+        minute=0,
+        args=[bot],
+        id='birthday_messages'
+    )
+
     _scheduler.start()
     print("⏰ Scheduler started")
 
@@ -73,3 +83,20 @@ async def _sync_sheets():
     users = db.get_all_users()
     success = sync_to_google_sheets(users)
     print(f"📊 Sheets sync: {'✅' if success else '❌'}")
+
+
+async def _send_birthday_messages(bot):
+    from utils import format_birthday_message
+    birthday_users = db.get_birthday_users()
+    count = 0
+    for user in birthday_users:
+        try:
+            await bot.send_message(
+                user['id'],
+                format_birthday_message(user),
+                parse_mode="Markdown"
+            )
+            count += 1
+        except Exception as e:
+            print(f"🎂 Birthday message failed for {user['id']}: {e}")
+    print(f"🎂 Birthday messages sent: {count}")
