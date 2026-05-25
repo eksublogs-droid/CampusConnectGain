@@ -35,6 +35,14 @@ def init_db():
     print("✅ Database initialized successfully")
 
 
+def run_migrations():
+    """Run on startup to add new columns to existing databases."""
+    from schema import MIGRATION_SQL
+    with db() as cur:
+        cur.execute(MIGRATION_SQL)
+    print("✅ Migrations applied")
+
+
 # ───── USER OPERATIONS ─────
 
 def get_user(user_id: int):
@@ -46,18 +54,27 @@ def get_user(user_id: int):
 def create_user(data: dict):
     with db() as cur:
         cur.execute("""
-            INSERT INTO users (id, username, full_name, phone, school, department, level, state, interests, bio, profile_photo_id)
-            VALUES (%(id)s, %(username)s, %(full_name)s, %(phone)s, %(school)s, %(department)s, %(level)s, %(state)s, %(interests)s, %(bio)s, %(profile_photo_id)s)
+            INSERT INTO users (id, username, full_name, phone, whatsapp_number, date_of_birth, show_whatsapp,
+                               school, department, level, state, interests, bio, profile_photo_id)
+            VALUES (%(id)s, %(username)s, %(full_name)s, %(phone)s, %(whatsapp_number)s, %(date_of_birth)s,
+                    %(show_whatsapp)s, %(school)s, %(department)s, %(level)s, %(state)s, %(interests)s,
+                    %(bio)s, %(profile_photo_id)s)
             ON CONFLICT (id) DO UPDATE SET
-                full_name=EXCLUDED.full_name, phone=EXCLUDED.phone, school=EXCLUDED.school,
-                department=EXCLUDED.department, level=EXCLUDED.level, state=EXCLUDED.state,
-                interests=EXCLUDED.interests, bio=EXCLUDED.bio, profile_photo_id=EXCLUDED.profile_photo_id,
-                updated_at=NOW()
+                full_name=EXCLUDED.full_name, phone=EXCLUDED.phone,
+                whatsapp_number=EXCLUDED.whatsapp_number, date_of_birth=EXCLUDED.date_of_birth,
+                show_whatsapp=EXCLUDED.show_whatsapp,
+                school=EXCLUDED.school, department=EXCLUDED.department, level=EXCLUDED.level,
+                state=EXCLUDED.state, interests=EXCLUDED.interests, bio=EXCLUDED.bio,
+                profile_photo_id=EXCLUDED.profile_photo_id, updated_at=NOW()
         """, data)
 
 
 def update_user_field(user_id: int, field: str, value):
-    allowed = {'full_name','phone','school','department','level','state','interests','bio','profile_photo_id','is_active','username'}
+    allowed = {
+        'full_name', 'phone', 'whatsapp_number', 'date_of_birth', 'show_whatsapp',
+        'school', 'department', 'level', 'state', 'interests', 'bio',
+        'profile_photo_id', 'is_active', 'username'
+    }
     if field not in allowed:
         raise ValueError(f"Field {field} not allowed")
     with db() as cur:
@@ -144,6 +161,20 @@ def get_state(user_id: int):
 def clear_state(user_id: int):
     with db() as cur:
         cur.execute("DELETE FROM conversation_states WHERE user_id = %s", (user_id,))
+
+
+def get_birthday_users():
+    """Return users whose birth month+day matches today."""
+    with db() as cur:
+        cur.execute("""
+            SELECT * FROM users
+            WHERE is_active = TRUE
+              AND is_blacklisted = FALSE
+              AND date_of_birth IS NOT NULL
+              AND EXTRACT(MONTH FROM date_of_birth) = EXTRACT(MONTH FROM CURRENT_DATE)
+              AND EXTRACT(DAY FROM date_of_birth) = EXTRACT(DAY FROM CURRENT_DATE)
+        """)
+        return cur.fetchall()
 
 
 # ───── SAVED PROFILES ─────
