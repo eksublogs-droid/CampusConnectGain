@@ -7,17 +7,24 @@ import hmac
 import hashlib
 import json
 import threading
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import database as db
 from utils import verify_paystack_payment, AD_TIERS
 
 app = Flask(__name__)
 _bot_app = None  # set from main.py
 
+WEBAPP_DIR = os.path.join(os.path.dirname(__file__), "webapp")
+
 
 def set_bot_app(application):
     global _bot_app
     _bot_app = application
+
+
+@app.route("/register.html")
+def serve_register():
+    return send_from_directory(WEBAPP_DIR, "register.html")
 
 
 @app.route("/webhook/paystack", methods=["POST"])
