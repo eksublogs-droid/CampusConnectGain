@@ -1,5 +1,8 @@
 """
-CampusConnect — Registration Flow (8 steps)
+CampusConnect — Registration Flow (3 stages)
+Stage 1: Name, Phone, School, Department (one message)
+Stage 2: Level (keyboard) → State (keyboard)
+Stage 3: Interests (keyboard) → Bio (text)
 """
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
@@ -11,7 +14,12 @@ from utils import (
     cancel_keyboard, main_menu_keyboard
 )
 
-STEPS = ["full_name", "phone", "school", "department", "level", "state", "interests", "bio"]
+TEMPLATE = (
+    "Name: \n"
+    "Phone: \n"
+    "School: \n"
+    "Department: "
+)
 
 
 async def start_registration(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -28,12 +36,18 @@ async def start_registration(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return
 
-    db.set_state(user_id, "reg:full_name", {})
+    db.set_state(user_id, "reg:stage1", {})
     await update.message.reply_text(
         "🎓 *Welcome to CampusConnect!*\n\n"
         "Nigeria's student network — right inside Telegram.\n\n"
-        "Let's set up your profile in 8 quick steps.\n\n"
-        "👤 *Step 1 of 8 — Full Name*\nWhat's your full name?",
+        "Fill in your details and send it back like this:\n\n"
+        "```\n"
+        "Name: Your Full Name\n"
+        "Phone: 08012345678\n"
+        "School: EKSU\n"
+        "Department: Computer Science"
+        "```\n\n"
+        "_Copy, fill in your details, and send!_",
         parse_mode="Markdown",
         reply_markup=cancel_keyboard()
     )
@@ -46,65 +60,58 @@ async def handle_registration_step(update: Update, context: ContextTypes.DEFAULT
     if text == "❌ Cancel":
         db.clear_state(user_id)
         await update.message.reply_text("Registration cancelled.", reply_markup=main_menu_keyboard())
-        return
+        return True
 
     state, data = db.get_state(user_id)
     if not state or not state.startswith("reg:"):
-        return False  # not in registration
+        return False
 
     step = state.split("reg:")[1]
 
-    # ── STEP 1: Full Name ──
-    if step == "full_name":
-        if len(text) < 3 or len(text) > 60:
-            await update.message.reply_text("❌ Name must be 3–60 characters. Try again:")
-            return True
-        data['full_name'] = text
-        db.set_state(user_id, "reg:phone", data)
-        await update.message.reply_text(
-            "📱 *Step 2 of 8 — Phone Number*\nEnter your WhatsApp number (e.g. 08012345678):",
-            parse_mode="Markdown"
-        )
+    # ── STAGE 1: Name, Phone, School, Department ──
+    if step == "stage1":
+        lines = {}
+        for line in text.splitlines():
+            if ":" in line:
+                key, _, val = line.partition(":")
+                lines[key.strip().lower()] = val.strip()
 
-    # ── STEP 2: Phone ──
-    elif step == "phone":
-        phone = validate_phone(text)
+        name = lines.get("name", "")
+        phone_raw = lines.get("phone", "")
+        school = lines.get("school", "")
+        department = lines.get("department", "")
+
+        errors = []
+        if len(name) < 3 or len(name) > 60:
+            errors.append("❌ Name must be 3–60 characters")
+        phone = validate_phone(phone_raw)
         if not phone:
-            await update.message.reply_text("❌ Invalid number. Use format: 08012345678 or 234801...")
+            errors.append("❌ Invalid phone number (use format: 08012345678)")
+        if len(school) < 2 or len(school) > 80:
+            errors.append("❌ School name is too short or too long")
+        if len(department) < 2 or len(department) > 80:
+            errors.append("❌ Department is too short or too long")
+
+        if errors:
+            await update.message.reply_text(
+                "\n".join(errors) + "\n\nPlease fill and send again:\n\n"
+                "```\nName: Your Full Name\nPhone: 08012345678\nSchool: EKSU\nDepartment: Computer Science\n```",
+                parse_mode="Markdown"
+            )
             return True
+
+        data['full_name'] = name
         data['phone'] = phone
-        db.set_state(user_id, "reg:school", data)
-        await update.message.reply_text(
-            "🏫 *Step 3 of 8 — School*\nType your university or polytechnic name:\n_(e.g. EKSU, UNILAG, LASU)_",
-            parse_mode="Markdown"
-        )
-
-    # ── STEP 3: School ──
-    elif step == "school":
-        if len(text) < 2 or len(text) > 80:
-            await update.message.reply_text("❌ School name too short/long. Try again:")
-            return True
-        data['school'] = text.upper()
-        db.set_state(user_id, "reg:department", data)
-        await update.message.reply_text(
-            "📚 *Step 4 of 8 — Department*\nEnter your department:\n_(e.g. Computer Science, Mass Communication)_",
-            parse_mode="Markdown"
-        )
-
-    # ── STEP 4: Department ──
-    elif step == "department":
-        if len(text) < 2 or len(text) > 80:
-            await update.message.reply_text("❌ Department too short/long. Try again:")
-            return True
-        data['department'] = text
+        data['school'] = school.upper()
+        data['department'] = department
         db.set_state(user_id, "reg:level", data)
         await update.message.reply_text(
-            "🎯 *Step 5 of 8 — Level*\nSelect your current level:",
+            "✅ Got it!\n\n🎯 *Select your current level:*",
             parse_mode="Markdown",
             reply_markup=levels_keyboard()
         )
 
-    # ── STEP 5: Level ──
+    # ── STAGE 2a: Level ──
     elif step == "level":
         if text not in LEVELS:
             await update.message.reply_text("❌ Please select a valid level from the options.")
@@ -112,12 +119,12 @@ async def handle_registration_step(update: Update, context: ContextTypes.DEFAULT
         data['level'] = text
         db.set_state(user_id, "reg:state", data)
         await update.message.reply_text(
-            "📍 *Step 6 of 8 — State of Origin*\nSelect your state:",
+            "📍 *Select your state of origin:*",
             parse_mode="Markdown",
             reply_markup=states_keyboard()
         )
 
-    # ── STEP 6: State ──
+    # ── STAGE 2b: State ──
     elif step == "state":
         if text not in NIGERIAN_STATES:
             await update.message.reply_text("❌ Please select a valid Nigerian state from the keyboard.")
@@ -125,12 +132,12 @@ async def handle_registration_step(update: Update, context: ContextTypes.DEFAULT
         data['state'] = text
         db.set_state(user_id, "reg:interests", {**data, 'interests': []})
         await update.message.reply_text(
-            "🌟 *Step 7 of 8 — Interests*\nSelect your interests (tap multiple, then tap ✅ Done):",
+            "🌟 *Select your interests* (tap multiple, then tap ✅ Done):",
             parse_mode="Markdown",
             reply_markup=interests_keyboard()
         )
 
-    # ── STEP 7: Interests ──
+    # ── STAGE 3a: Interests ──
     elif step == "interests":
         if text == "✅ Done":
             if not data.get('interests'):
@@ -138,7 +145,7 @@ async def handle_registration_step(update: Update, context: ContextTypes.DEFAULT
                 return True
             db.set_state(user_id, "reg:bio", data)
             await update.message.reply_text(
-                "💬 *Step 8 of 8 — Bio*\nWrite a short bio about yourself (max 200 chars).\n\n"
+                "💬 *Almost done! Write a short bio* (max 200 chars).\n\n"
                 "_e.g. 'Tech enthusiast, building the next big app. Open to collabs!'_\n\n"
                 "Or send /skip to use a default.",
                 parse_mode="Markdown",
@@ -148,20 +155,24 @@ async def handle_registration_step(update: Update, context: ContextTypes.DEFAULT
             current = data.get('interests', [])
             if text in current:
                 current.remove(text)
-                await update.message.reply_text(f"➖ Removed: {text}\n\nSelected: {', '.join(current) or 'none'}\n\nTap ✅ Done when finished.")
+                await update.message.reply_text(
+                    f"➖ Removed: {text}\n\nSelected: {', '.join(current) or 'none'}\n\nTap ✅ Done when finished."
+                )
             else:
                 if len(current) >= 5:
                     await update.message.reply_text("❌ Max 5 interests. Tap ✅ Done or remove one first.")
                     return True
                 current.append(text)
-                await update.message.reply_text(f"✅ Added: {text}\n\nSelected: {', '.join(current)}\n\nContinue selecting or tap ✅ Done.")
+                await update.message.reply_text(
+                    f"✅ Added: {text}\n\nSelected: {', '.join(current)}\n\nContinue selecting or tap ✅ Done."
+                )
             data['interests'] = current
             db.set_state(user_id, "reg:interests", data)
         else:
             await update.message.reply_text("Please use the keyboard buttons to select interests.")
         return True
 
-    # ── STEP 8: Bio ──
+    # ── STAGE 3b: Bio ──
     elif step == "bio":
         bio = text
         if text == "/skip":
@@ -171,7 +182,6 @@ async def handle_registration_step(update: Update, context: ContextTypes.DEFAULT
             return True
 
         data['bio'] = bio
-        # Save the user
         user_data = {
             'id': user_id,
             'username': update.effective_user.username,
@@ -198,6 +208,6 @@ async def handle_registration_step(update: Update, context: ContextTypes.DEFAULT
             parse_mode="Markdown",
             reply_markup=main_menu_keyboard()
         )
-        return True, user_obj  # signal to post to channel
+        return True, user_obj
 
     return True
