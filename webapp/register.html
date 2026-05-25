@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusConnect — Register</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0e1117;
+      --card: #1a1f2e;
+      --border: #2a3040;
+      --accent: #4f8ef7;
+      --accent2: #6c63ff;
+      --text: #e8eaf0;
+      --muted: #7a8299;
+      --error: #ff5f6d;
+      --success: #43e97b;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px 16px 32px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-top: 8px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 14px;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    label span.req { color: var(--accent); margin-left: 2px; }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 11px 13px;
+      background: #0e1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+    input.error, select.error {
+      border-color: var(--error);
+    }
+
+    /* Phone prefix row */
+    .phone-row { display: flex; gap: 8px; }
+    .phone-prefix {
+      padding: 11px 12px;
+      background: #0e1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 15px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .phone-row input { flex: 1; }
+
+    /* School search */
+    .school-wrap { position: relative; }
+    #school-results {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .school-item {
+      padding: 10px 13px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .school-item:last-child { border-bottom: none; }
+    .school-item:hover, .school-item.active { background: #252b3d; }
+    .school-item .badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+    .badge.federal  { background: #1a3d5c; color: #5bc8ff; }
+    .badge.state    { background: #1a3d2a; color: #43e97b; }
+    .badge.private  { background: #3d2a1a; color: #ffb347; }
+    .badge.poly     { background: #2d1a3d; color: #c97bff; }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+    .toggle-label { font-size: 14px; }
+    .toggle-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .toggle {
+      position: relative;
+      width: 46px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 26px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .slider:before {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    input:checked + .slider { background: var(--accent); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Error text */
+    .err-msg {
+      display: none;
+      font-size: 12px;
+      color: var(--error);
+      margin-top: 4px;
+    }
+    .err-msg.show { display: block; }
+
+    /* Submit */
+    #submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: var(--radius);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      letter-spacing: 0.3px;
+      transition: opacity 0.2s;
+    }
+    #submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #submit-btn:active:not(:disabled) { opacity: 0.85; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      background: #252b3d;
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎓 CampusConnect</h1>
+  <p>Nigeria's Student Network</p>
+</div>
+
+<!-- Personal Info -->
+<div class="card">
+  <div class="card-title">Personal Info</div>
+
+  <div class="field">
+    <label>Full Name <span class="req">*</span></label>
+    <input type="text" id="full_name" placeholder="e.g. Adewale Okafor" maxlength="60" />
+    <div class="err-msg" id="err-name">Name must be 3–60 characters</div>
+  </div>
+
+  <div class="field">
+    <label>Date of Birth <span class="req">*</span></label>
+    <input type="date" id="date_of_birth" max="" />
+    <div class="err-msg" id="err-dob">Please enter a valid date of birth</div>
+  </div>
+</div>
+
+<!-- Contact -->
+<div class="card">
+  <div class="card-title">Contact</div>
+
+  <div class="field">
+    <label>WhatsApp Number <span class="req">*</span></label>
+    <div class="phone-row">
+      <span class="phone-prefix">🇳🇬 +234</span>
+      <input type="tel" id="whatsapp_number" placeholder="8012345678" maxlength="10" inputmode="numeric" />
+    </div>
+    <div class="err-msg" id="err-wa">Enter a valid 10-digit Nigerian number (without the leading 0)</div>
+  </div>
+
+  <div class="field">
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Show WhatsApp to others?</div>
+        <div class="toggle-sub">Others can see your number on your profile</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="show_whatsapp" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- Academic -->
+<div class="card">
+  <div class="card-title">Academic Info</div>
+
+  <div class="field">
+    <label>University <span class="req">*</span></label>
+    <div class="school-wrap">
+      <input type="text" id="school_search" placeholder="Search your school…" autocomplete="off" />
+      <div id="school-results"></div>
+    </div>
+    <input type="hidden" id="school" />
+    <div class="err-msg" id="err-school">Please select a university from the list</div>
+  </div>
+
+  <div class="field">
+    <label>Department <span class="req">*</span></label>
+    <input type="text" id="department" placeholder="e.g. Computer Science" maxlength="80" />
+    <div class="err-msg" id="err-dept">Department must be at least 2 characters</div>
+  </div>
+</div>
+
+<button id="submit-btn">Join CampusConnect 🚀</button>
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Telegram WebApp init ──
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  // ── DOB max = today ──
+  document.getElementById('date_of_birth').max = new Date().toISOString().split('T')[0];
+
+  // ── Nigerian Universities ──
+  const SCHOOLS = [
+    // Federal Universities
+    { name: "University of Lagos (UNILAG)", abbr: "UNILAG", type: "federal" },
+    { name: "University of Ibadan (UI)", abbr: "UI", type: "federal" },
+    { name: "Obafemi Awolowo University (OAU)", abbr: "OAU", type: "federal" },
+    { name: "University of Nigeria, Nsukka (UNN)", abbr: "UNN", type: "federal" },
+    { name: "Ahmadu Bello University (ABU)", abbr: "ABU", type: "federal" },
+    { name: "University of Benin (UNIBEN)", abbr: "UNIBEN", type: "federal" },
+    { name: "University of Port Harcourt (UNIPORT)", abbr: "UNIPORT", type: "federal" },
+    { name: "Federal University of Technology, Akure (FUTA)", abbr: "FUTA", type: "federal" },
+    { name: "Federal University, Oye-Ekiti (FUOYE)", abbr: "FUOYE", type: "federal" },
+    { name: "Nnamdi Azikiwe University (NAU)", abbr: "NAU", type: "federal" },
+    { name: "University of Calabar (UNICAL)", abbr: "UNICAL", type: "federal" },
+    { name: "Bayero University Kano (BUK)", abbr: "BUK", type: "federal" },
+    { name: "University of Ilorin (UNILORIN)", abbr: "UNILORIN", type: "federal" },
+    { name: "University of Jos (UNIJOS)", abbr: "UNIJOS", type: "federal" },
+    { name: "University of Maiduguri (UNIMAID)", abbr: "UNIMAID", type: "federal" },
+    { name: "Michael Okpara University of Agriculture (MOUAU)", abbr: "MOUAU", type: "federal" },
+    { name: "Federal University of Technology, Owerri (FUTO)", abbr: "FUTO", type: "federal" },
+    { name: "Federal University, Dutsin-Ma (FUDMA)", abbr: "FUDMA", type: "federal" },
+    // State Universities
+    { name: "Ekiti State University (EKSU)", abbr: "EKSU", type: "state" },
+    { name: "Lagos State University (LASU)", abbr: "LASU", type: "state" },
+    { name: "Osun State University (UNIOSUN)", abbr: "UNIOSUN", type: "state" },
+    { name: "Ondo State University of Science and Technology (OSUSTECH)", abbr: "OSUSTECH", type: "state" },
+    { name: "Olabisi Onabanjo University (OOU)", abbr: "OOU", type: "state" },
+    { name: "Adekunle Ajasin University (AAUA)", abbr: "AAUA", type: "state" },
+    { name: "Ambrose Alli University (AAU)", abbr: "AAU", type: "state" },
+    { name: "Delta State University (DELSU)", abbr: "DELSU", type: "state" },
+    { name: "Anambra State University (ANSU)", abbr: "ANSU", type: "state" },
+    { name: "Enugu State University (ESUT)", abbr: "ESUT", type: "state" },
+    { name: "Kogi State University (KSU)", abbr: "KSU", type: "state" },
+    { name: "Kwara State University (KWASU)", abbr: "KWASU", type: "state" },
+    { name: "Plateau State University (PLASU)", abbr: "PLASU", type: "state" },
+    { name: "Abia State University (ABSU)", abbr: "ABSU", type: "state" },
+    { name: "Cross River University of Technology (CRUTECH)", abbr: "CRUTECH", type: "state" },
+    { name: "Imo State University (IMSU)", abbr: "IMSU", type: "state" },
+    { name: "Nasarawa State University (NSUK)", abbr: "NSUK", type: "state" },
+    { name: "Rivers State University (RSU)", abbr: "RSU", type: "state" },
+    { name: "Ebonyi State University (EBSU)", abbr: "EBSU", type: "state" },
+    // Private Universities
+    { name: "Covenant University (CU)", abbr: "CU", type: "private" },
+    { name: "Babcock University", abbr: "BABCOCK", type: "private" },
+    { name: "Redeemer's University (RUN)", abbr: "RUN", type: "private" },
+    { name: "Pan-Atlantic University (PAU)", abbr: "PAU", type: "private" },
+    { name: "Bowen University", abbr: "BOWEN", type: "private" },
+    { name: "Baze University", abbr: "BAZE", type: "private" },
+    { name: "Landmark University", abbr: "LMU", type: "private" },
+    { name: "American University of Nigeria (AUN)", abbr: "AUN", type: "private" },
+    { name: "Crawford University", abbr: "CRAWFORD", type: "private" },
+    { name: "Lead City University", abbr: "LCU", type: "private" },
+    // Polytechnics
+    { name: "Yaba College of Technology (YABATECH)", abbr: "YABATECH", type: "poly" },
+    { name: "Federal Polytechnic, Ede", abbr: "FEDPOEDE", type: "poly" },
+    { name: "Osun State Polytechnic (OSPOLY)", abbr: "OSPOLY", type: "poly" },
+    { name: "Moshood Abiola Polytechnic (MAPOLY)", abbr: "MAPOLY", type: "poly" },
+    { name: "Federal Polytechnic, Nekede", abbr: "NEKEDE", type: "poly" },
+    { name: "Federal Polytechnic, Ilaro", abbr: "ILARO", type: "poly" },
+    { name: "Rufus Giwa Polytechnic (RUGIPO)", abbr: "RUGIPO", type: "poly" },
+    { name: "The Polytechnic, Ibadan", abbr: "POLYIBADAN", type: "poly" },
+  ];
+
+  const TYPE_LABEL = { federal: "Federal", state: "State", private: "Private", poly: "Poly" };
+
+  let selectedSchool = "";
+  const searchInput = document.getElementById('school_search');
+  const resultsBox = document.getElementById('school-results');
+  const schoolHidden = document.getElementById('school');
+
+  function renderResults(query) {
+    const q = query.toLowerCase().trim();
+    if (!q) { resultsBox.style.display = 'none'; return; }
+    const matches = SCHOOLS.filter(s =>
+      s.name.toLowerCase().includes(q) || s.abbr.toLowerCase().includes(q)
+    ).slice(0, 8);
+    if (!matches.length) { resultsBox.style.display = 'none'; return; }
+    resultsBox.innerHTML = matches.map(s =>
+      `<div class="school-item" data-abbr="${s.abbr}" data-name="${s.name}" data-type="${s.type}">
+        ${s.name} <span class="badge ${s.type}">${TYPE_LABEL[s.type]}</span>
+      </div>`
+    ).join('');
+    resultsBox.style.display = 'block';
+  }
+
+  searchInput.addEventListener('input', () => {
+    selectedSchool = "";
+    schoolHidden.value = "";
+    renderResults(searchInput.value);
+  });
+
+  resultsBox.addEventListener('click', e => {
+    const item = e.target.closest('.school-item');
+    if (!item) return;
+    selectedSchool = item.dataset.abbr;
+    schoolHidden.value = selectedSchool;
+    searchInput.value = item.dataset.name;
+    resultsBox.style.display = 'none';
+    clearError('school_search', 'err-school');
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.school-wrap')) resultsBox.style.display = 'none';
+  });
+
+  // ── Validation helpers ──
+  function showError(inputId, errId) {
+    document.getElementById(inputId)?.classList.add('error');
+    document.getElementById(errId)?.classList.add('show');
+  }
+  function clearError(inputId, errId) {
+    document.getElementById(inputId)?.classList.remove('error');
+    document.getElementById(errId)?.classList.remove('show');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ── Submit ──
+  document.getElementById('submit-btn').addEventListener('click', () => {
+    let valid = true;
+
+    const name = document.getElementById('full_name').value.trim();
+    if (name.length < 3 || name.length > 60) {
+      showError('full_name', 'err-name'); valid = false;
+    } else clearError('full_name', 'err-name');
+
+    const dob = document.getElementById('date_of_birth').value;
+    const dobYear = dob ? new Date(dob).getFullYear() : 0;
+    if (!dob || dobYear < 1980 || new Date(dob) > new Date()) {
+      showError('date_of_birth', 'err-dob'); valid = false;
+    } else clearError('date_of_birth', 'err-dob');
+
+    const waRaw = document.getElementById('whatsapp_number').value.trim().replace(/\D/g, '');
+    const waValid = waRaw.length === 10 && !waRaw.startsWith('0');
+    if (!waValid) {
+      showError('whatsapp_number', 'err-wa'); valid = false;
+    } else clearError('whatsapp_number', 'err-wa');
+
+    if (!schoolHidden.value) {
+      showError('school_search', 'err-school'); valid = false;
+    } else clearError('school_search', 'err-school');
+
+    const dept = document.getElementById('department').value.trim();
+    if (dept.length < 2) {
+      showError('department', 'err-dept'); valid = false;
+    } else clearError('department', 'err-dept');
+
+    if (!valid) { showToast('⚠️ Please fix the errors above'); return; }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    const payload = {
+      full_name: name,
+      whatsapp_number: '+234' + waRaw,
+      school: schoolHidden.value,
+      department: dept,
+      date_of_birth: dob,
+      show_whatsapp: document.getElementById('show_whatsapp').checked,
+    };
+
+    tg.sendData(JSON.stringify(payload));
+    tg.close();
+  });
+</script>
+</body>
+</html>
