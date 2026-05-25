@@ -7,12 +7,10 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import database as db
 from utils import (
-    AD_TIERS, generate_reference, create_paystack_payment,
+    AD_TIERS, generate_reference, create_virtual_account, format_payment_message,
     format_ad_channel_post, cancel_keyboard, main_menu_keyboard,
     ad_tier_keyboard, check_rate_limit
 )
-
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 
 
 async def cmd_runad(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -107,46 +105,42 @@ async def handle_ad_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     elif data == "ad:confirm_pay":
         state, ad_data = db.get_state(user_id)
-        user = db.get_user(user_id)
         tier = ad_data.get('tier')
         tier_info = AD_TIERS[tier]
         reference = generate_reference("AD", user_id)
 
-        fake_email = f"user{user_id}@campusconnect.ng"
         try:
-            pay_url, ref = create_paystack_payment(
-                fake_email, tier_info['price'], reference,
-                metadata={'type': 'ad', 'user_id': user_id, 'tier': tier}
+            acct = create_virtual_account(
+                tx_ref=reference,
+                amount=tier_info['price'],
+                narration=f"CampusConnect Ad: {tier_info['label']}",
+                meta={'type': 'ad', 'user_id': user_id, 'tier': tier}
             )
             ad_id = db.create_ad(
-                user_id, tier, ad_data['copy'], tier_info['price'], ref,
+                user_id, tier, ad_data['copy'], tier_info['price'], reference,
                 image_file_id=ad_data.get('image_file_id')
             )
             ad_data['ad_id'] = ad_id
-            ad_data['reference'] = ref
+            ad_data['reference'] = reference
             db.set_state(user_id, "ad:awaiting_payment", ad_data)
 
             await query.message.reply_text(
-                f"💳 *Pay for Your Ad*\n\n"
-                f"Amount: ₦{tier_info['price']:,}\n"
-                f"Tier: {tier_info['label']}\n\n"
-                f"Click the button below to pay securely via Paystack:",
+                format_payment_message(acct, f"{tier_info['label']} Ad"),
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton(f"💳 Pay ₦{tier_info['price']:,}", url=pay_url)],
-                    [InlineKeyboardButton("✅ I've Paid — Verify", callback_data=f"ad:verify:{ref}")]
+                    [InlineKeyboardButton("✅ Check Payment", callback_data=f"ad:verify:{reference}")]
                 ])
             )
         except Exception as e:
-            await query.message.reply_text(f"❌ Payment setup failed: {str(e)}")
+            print(f"Ad payment error: {e}")
+            await query.message.reply_text("❌ Payment setup failed. Try again.")
 
     elif data.startswith("ad:verify:"):
         reference = data.split("ad:verify:")[1]
-        from utils import verify_paystack_payment
-        paid, info = verify_paystack_payment(reference)
+        from utils import verify_flw_payment
+        paid, info = verify_flw_payment(reference)
         if paid:
             state, ad_data = db.get_state(user_id)
-            # Update ad status
             tier = ad_data.get('tier', 'basic')
             ad = db.get_ad_by_reference(reference)
             if ad:
@@ -154,7 +148,6 @@ async def handle_ad_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 db.log_revenue(user_id, f"ad_{tier}", AD_TIERS[tier]['price'], reference)
 
                 if tier == 'premium':
-                    # Queue for admin review
                     from admin import notify_admin_new_ad
                     await notify_admin_new_ad(context.bot, ad)
                     with db.db() as cur:
@@ -167,7 +160,6 @@ async def handle_ad_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         reply_markup=main_menu_keyboard()
                     )
                 else:
-                    # Auto-publish
                     duration = AD_TIERS[tier]['duration_hours']
                     with db.db() as cur:
                         cur.execute("UPDATE ads SET status='paid' WHERE paystack_reference=%s", (reference,))
@@ -178,7 +170,6 @@ async def handle_ad_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         parse_mode="Markdown",
                         reply_markup=main_menu_keyboard()
                     )
-                    # Broadcast for standard tier
                     if tier == 'standard':
                         await _broadcast_ad(ad, user, context.bot)
                 db.clear_state(user_id)
@@ -186,14 +177,13 @@ async def handle_ad_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 await query.message.reply_text("❌ Ad not found. Contact support.")
         else:
             await query.message.reply_text(
-                "❌ Payment not verified yet.\n\nComplete payment on Paystack, then tap verify again.",
+                "⏳ Payment not received yet.\n\nMake sure you transferred the exact amount, then try again.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("✅ Try Again", callback_data=f"ad:verify:{reference}")]
                 ])
             )
 
     elif data.startswith("ad:edit:"):
-        reference = data.split("ad:edit:")[1]
         state, ad_data = db.get_state(user_id)
         db.set_state(user_id, "ad:copy", {'tier': ad_data.get('tier', 'basic')})
         await query.message.reply_text("✏️ Rewrite your ad copy:", reply_markup=cancel_keyboard())
