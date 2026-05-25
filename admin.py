@@ -77,10 +77,18 @@ async def cmd_lookup(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for u in users:
-        card = format_profile_card(u)
+        card = format_profile_card(u, is_own_profile=True)
         status = "🚫 Blacklisted" if u['is_blacklisted'] else ("✅ Active" if u['is_active'] else "⚠️ Inactive")
+        dob = u.get('date_of_birth') or "—"
+        wa = u.get('whatsapp_number') or "—"
+        show_wa = "✅ Yes" if u.get('show_whatsapp', True) else "🔒 No"
         await update.message.reply_text(
-            f"{card}\n\n🆔 ID: `{u['id']}`\nStatus: {status}",
+            f"{card}\n\n"
+            f"🆔 ID: `{u['id']}`\n"
+            f"Status: {status}\n"
+            f"💬 WhatsApp: {wa}\n"
+            f"🎂 DOB: {dob}\n"
+            f"👁️ Show WhatsApp: {show_wa}",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🚫 Blacklist", callback_data=f"admin:blacklist:{u['id']}"),
