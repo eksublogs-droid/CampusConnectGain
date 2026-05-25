@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT,
     full_name TEXT NOT NULL,
     phone TEXT NOT NULL,
+    whatsapp_number TEXT,
+    date_of_birth DATE,
+    show_whatsapp BOOLEAN DEFAULT TRUE,
     school TEXT NOT NULL,
     department TEXT NOT NULL,
     level TEXT NOT NULL,
@@ -157,4 +160,13 @@ CREATE INDEX IF NOT EXISTS idx_ads_status ON ads(status);
 CREATE INDEX IF NOT EXISTS idx_ads_expires ON ads(expires_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_reference ON orders(paystack_reference);
+CREATE INDEX IF NOT EXISTS idx_users_dob ON users(date_of_birth);
+"""
+
+# Run once on existing databases to add new columns
+MIGRATION_SQL = """
+ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_number TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS date_of_birth DATE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS show_whatsapp BOOLEAN DEFAULT TRUE;
+CREATE INDEX IF NOT EXISTS idx_users_dob ON users(date_of_birth);
 """
