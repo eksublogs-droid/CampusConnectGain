@@ -315,10 +315,10 @@ async def set_bot_commands(app):
 
 
 # ─────────────────────────────────────
-# MAIN
+# BOT RUNNER (background thread)
 # ─────────────────────────────────────
 
-def main():
+def run_bot():
     token = os.getenv("BOT_TOKEN")
     if not token:
         raise ValueError("BOT_TOKEN not set in environment!")
@@ -332,8 +332,6 @@ def main():
         await set_bot_commands(application)
         from scheduler import start_scheduler
         start_scheduler(application.bot)
-        from webhook import start_webhook_thread
-        start_webhook_thread()
         print("🚀 CampusConnect Bot is LIVE!")
 
     # Build app
@@ -386,6 +384,25 @@ def main():
 
     print("🤖 Starting CampusConnect Bot...")
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+
+
+# ─────────────────────────────────────
+# MAIN — Flask is the main process
+# ─────────────────────────────────────
+
+def main():
+    import threading
+    from webhook import app as flask_app
+
+    # Start bot in background thread
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
+    print("🤖 Bot thread started")
+
+    # Flask runs as main process so Railway binds to it properly
+    port = int(os.getenv("PORT", 8080))
+    print(f"🌐 Starting Flask on port {port}")
+    flask_app.run(host="0.0.0.0", port=port, debug=False)
 
 
 if __name__ == "__main__":
