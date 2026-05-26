@@ -105,6 +105,12 @@ def health():
     return jsonify({"status": "ok", "bot": "CampusConnect"}), 200
 
 
+def run_webhook_server():
+    port = int(os.getenv("PORT", os.getenv("WEBHOOK_SERVER_PORT", 8080)))
+    app.run(host="0.0.0.0", port=port, debug=False)
+
+
 def start_webhook_thread():
-    # Kept for compatibility but no longer used — Flask is started from main.py
-    pass
+    t = threading.Thread(target=run_webhook_server, daemon=True)
+    t.start()
+    print(f"🌐 Webhook server started")
