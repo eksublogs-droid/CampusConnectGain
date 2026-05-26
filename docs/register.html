@@ -4,368 +4,877 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CampusConnect — Register</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg: #0e1117;
-      --card: #1a1f2e;
-      --border: #2a3040;
-      --accent: #4f8ef7;
-      --accent2: #6c63ff;
-      --text: #e8eaf0;
-      --muted: #7a8299;
-      --error: #ff5f6d;
-      --success: #43e97b;
-      --radius: 12px;
+      --bg: #080c14;
+      --surface: #0f1521;
+      --card: #131b28;
+      --border: #1e2d42;
+      --border2: #243450;
+      --accent: #3b82f6;
+      --accent2: #8b5cf6;
+      --accentg: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --text3: #64748b;
+      --error: #f43f5e;
+      --r: 14px;
+      --r2: 10px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'DM Sans', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: 16px 16px 32px;
+      padding: 0 0 40px;
     }
 
-    .header {
+    /* Hero */
+    .hero {
+      background: linear-gradient(160deg, #0f1c35 0%, #0a1220 60%, var(--bg) 100%);
+      padding: 28px 20px 22px;
       text-align: center;
-      margin-bottom: 24px;
-      padding-top: 8px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
     }
-    .header h1 {
-      font-size: 22px;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%;
+      transform: translateX(-50%);
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-icon {
+      width: 52px; height: 52px;
+      background: var(--accentg);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 12px;
+      box-shadow: 0 8px 24px rgba(59,130,246,0.3);
+    }
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700;
+      background: var(--accentg);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .hero p { color: var(--text2); font-size: 13px; margin-top: 4px; }
 
+    /* Progress */
+    .progress-wrap {
+      padding: 16px 20px 4px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .prog-step {
+      flex: 1; height: 3px;
+      background: var(--border); border-radius: 3px;
+      transition: background 0.4s;
+    }
+    .prog-step.done { background: linear-gradient(90deg,#3b82f6,#8b5cf6); }
+
+    /* Section */
+    .section { margin: 14px 16px 0; }
+    .section-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px; padding: 0 2px;
+    }
+    .section-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .section-icon.blue   { background: rgba(59,130,246,0.15); }
+    .section-icon.purple { background: rgba(139,92,246,0.15); }
+    .section-icon.green  { background: rgba(16,185,129,0.15); }
+    .section-icon.orange { background: rgba(245,158,11,0.15); }
+    .section-icon.pink   { background: rgba(236,72,153,0.15); }
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 600;
+      color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px;
+    }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 16px;
-      margin-bottom: 14px;
-    }
-    .card-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 14px;
+      border-radius: var(--r);
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 14px;
     }
 
-    .field { margin-bottom: 14px; }
-    .field:last-child { margin-bottom: 0; }
-
-    label {
-      display: block;
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 6px;
+    /* Fields */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label {
+      font-size: 12.5px; font-weight: 500; color: var(--text2);
+      display: flex; align-items: center; gap: 4px;
     }
-    label span.req { color: var(--accent); margin-left: 2px; }
+    .req { color: var(--accent); }
+    .hint {
+      font-size: 11.5px; color: var(--text3);
+      background: rgba(59,130,246,0.07);
+      border: 1px solid rgba(59,130,246,0.15);
+      border-radius: 8px; padding: 7px 10px;
+      display: flex; align-items: flex-start; gap: 6px; line-height: 1.5;
+    }
+    .hint-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
 
-    input[type="text"],
-    input[type="tel"],
-    input[type="date"],
-    select {
-      width: 100%;
-      padding: 11px 13px;
-      background: #0e1117;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 15px;
+    input[type="text"], input[type="tel"], textarea {
+      width: 100%; padding: 11px 13px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r2);
+      color: var(--text); font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
       outline: none;
-      transition: border-color 0.2s;
-      appearance: none;
-      -webkit-appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    input:focus, select:focus {
+    input:focus, textarea:focus {
       border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
     }
-    input.error, select.error {
-      border-color: var(--error);
-    }
+    input.error { border-color: var(--error); }
+    input::placeholder { color: var(--text3); }
 
-    /* Phone prefix row */
-    .phone-row { display: flex; gap: 8px; }
+    /* DOB */
+    .dob-row { display: flex; gap: 8px; }
+    .dob-row .modal-trigger { flex: 1; }
+
+    /* Modal trigger button (replaces all selects) */
+    .modal-trigger {
+      width: 100%; padding: 11px 13px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r2);
+      color: var(--text3); font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      text-align: left; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .modal-trigger.selected { color: var(--text); }
+    .modal-trigger.error { border-color: var(--error); }
+    .modal-trigger:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
+    .modal-trigger-chevron { color: var(--text3); font-size: 11px; flex-shrink: 0; }
+
+    /* Phone */
+    .phone-row { display: flex; gap: 8px; align-items: stretch; }
     .phone-prefix {
       padding: 11px 12px;
-      background: #0e1117;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--muted);
-      font-size: 15px;
-      white-space: nowrap;
-      flex-shrink: 0;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r2);
+      color: var(--text2); font-size: 14px;
+      white-space: nowrap; flex-shrink: 0;
+      display: flex; align-items: center; gap: 4px;
     }
     .phone-row input { flex: 1; }
 
-    /* School search */
-    .school-wrap { position: relative; }
-    #school-results {
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0; right: 0;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 10;
-      display: none;
+    /* ── MODAL OVERLAY (shared) ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 200; align-items: flex-end;
     }
-    .school-item {
-      padding: 10px 13px;
-      cursor: pointer;
+    .modal-overlay.open { display: flex; }
+    .modal-sheet {
+      width: 100%;
+      background: #131b28;
+      border-radius: 20px 20px 0 0;
+      border-top: 1px solid var(--border2);
+      animation: slideUp 0.25s ease;
+      display: flex; flex-direction: column;
+      max-height: 82vh;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .modal-handle {
+      width: 40px; height: 4px;
+      background: var(--border2); border-radius: 4px;
+      margin: 12px auto 0; flex-shrink: 0;
+    }
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; font-weight: 600;
+      color: var(--text2); text-align: center;
+      padding: 12px 20px 14px;
       border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-search-wrap {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-search-wrap input {
+      border-radius: 8px;
+      padding: 9px 12px;
       font-size: 14px;
     }
-    .school-item:last-child { border-bottom: none; }
-    .school-item:hover, .school-item.active { background: #252b3d; }
-    .school-item .badge {
-      font-size: 11px;
-      padding: 2px 7px;
-      border-radius: 20px;
-      margin-left: 6px;
-      font-weight: 600;
+    .modal-list {
+      overflow-y: auto;
+      flex: 1;
+      padding-bottom: 12px;
     }
-    .badge.federal  { background: #1a3d5c; color: #5bc8ff; }
-    .badge.state    { background: #1a3d2a; color: #43e97b; }
-    .badge.private  { background: #3d2a1a; color: #ffb347; }
-    .badge.poly     { background: #2d1a3d; color: #c97bff; }
+    .modal-list::-webkit-scrollbar { width: 4px; }
+    .modal-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+    /* generic option row */
+    .modal-option {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 20px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .modal-option:last-child { border-bottom: none; }
+    .modal-option:hover { background: rgba(59,130,246,0.07); }
+    .modal-option.active { background: rgba(59,130,246,0.1); }
+    .modal-option-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .modal-option-icon.blue   { background: rgba(59,130,246,0.15); }
+    .modal-option-icon.pink   { background: rgba(236,72,153,0.15); }
+    .modal-option-icon.green  { background: rgba(16,185,129,0.15); }
+    .modal-option-label { flex: 1; }
+    .modal-option-name { font-size: 15px; font-weight: 500; color: var(--text); }
+    .modal-option-sub  { font-size: 12px; color: var(--text3); margin-top: 1px; }
+    .modal-check { color: var(--accent); font-size: 18px; opacity: 0; transition: opacity 0.2s; flex-shrink: 0; }
+    .modal-option.active .modal-check { opacity: 1; }
+
+    /* simple list option (Level, State, school) */
+    .list-option {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 20px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      font-size: 14.5px; color: var(--text);
+      transition: background 0.15s;
+    }
+    .list-option:last-child { border-bottom: none; }
+    .list-option:hover { background: rgba(59,130,246,0.07); }
+    .list-option.active { background: rgba(59,130,246,0.1); color: var(--accent); font-weight: 600; }
+    .list-check { color: var(--accent); font-size: 16px; opacity: 0; }
+    .list-option.active .list-check { opacity: 1; }
+
+    /* school option row */
+    .school-option {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 12px 20px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .school-option:last-child { border-bottom: none; }
+    .school-option:hover { background: rgba(59,130,246,0.07); }
+    .school-option.active { background: rgba(59,130,246,0.1); }
+    .school-name { flex: 1; font-size: 13.5px; color: var(--text); line-height: 1.3; }
+    .school-abbr { font-size: 11px; color: var(--text3); display: block; }
+    .badge {
+      font-size: 10.5px; padding: 2px 8px; border-radius: 20px;
+      font-weight: 600; white-space: nowrap; flex-shrink: 0;
+    }
+    .badge.federal { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .badge.state   { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .badge.private { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .badge.poly    { background: rgba(167,139,250,0.15); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.2); }
+
+    /* Selected school pill */
+    .selected-school {
+      display: none; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      background: rgba(59,130,246,0.08);
+      border: 1.5px solid rgba(59,130,246,0.25);
+      border-radius: var(--r2);
+      font-size: 13px; color: var(--text); margin-top: 6px;
+    }
+    .selected-school.show { display: flex; }
+    .selected-school .clear-btn { margin-left: auto; color: var(--text3); cursor: pointer; font-size: 16px; }
+
+    /* No results */
+    .no-results {
+      padding: 28px 20px; text-align: center;
+      color: var(--text3); font-size: 14px;
+    }
 
     /* Toggle */
     .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 0;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px; padding: 2px 0;
     }
-    .toggle-label { font-size: 14px; }
-    .toggle-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .toggle {
-      position: relative;
-      width: 46px;
-      height: 26px;
-      flex-shrink: 0;
-    }
+    .toggle-text .tl { font-size: 14px; font-weight: 500; }
+    .toggle-text .ts { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .toggle { position: relative; width: 48px; height: 27px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .slider {
-      position: absolute;
-      inset: 0;
-      background: var(--border);
-      border-radius: 26px;
-      cursor: pointer;
-      transition: background 0.2s;
+      position: absolute; inset: 0;
+      background: var(--border2); border-radius: 27px;
+      cursor: pointer; transition: background 0.2s;
     }
     .slider:before {
-      content: '';
-      position: absolute;
-      width: 20px; height: 20px;
-      left: 3px; top: 3px;
-      background: white;
-      border-radius: 50%;
+      content: ''; position: absolute;
+      width: 21px; height: 21px; left: 3px; top: 3px;
+      background: white; border-radius: 50%;
       transition: transform 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
     input:checked + .slider { background: var(--accent); }
-    input:checked + .slider:before { transform: translateX(20px); }
+    input:checked + .slider:before { transform: translateX(21px); }
 
-    /* Error text */
-    .err-msg {
-      display: none;
-      font-size: 12px;
-      color: var(--error);
-      margin-top: 4px;
+    /* Interests */
+    #interests-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 7px 12px; border-radius: 20px; font-size: 13px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #0e1117; color: var(--text2);
+      transition: all 0.15s; user-select: none;
     }
+    .chip:hover { border-color: var(--border2); color: var(--text); }
+    .chip.selected { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* Error */
+    .err-msg { display: none; font-size: 12px; color: var(--error); margin-top: 2px; padding-left: 2px; }
     .err-msg.show { display: block; }
+
+    /* Textarea */
+    textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+    .char-count { text-align: right; font-size: 11px; color: var(--text3); margin-top: 3px; }
 
     /* Submit */
     #submit-btn {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: none;
-      border-radius: var(--radius);
-      color: white;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 8px;
-      letter-spacing: 0.3px;
-      transition: opacity 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: calc(100% - 32px); margin: 20px 16px 0;
+      padding: 15px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border: none; border-radius: var(--r);
+      color: white; font-size: 16px; font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      cursor: pointer; letter-spacing: 0.2px;
+      transition: opacity 0.2s, transform 0.1s;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.35);
     }
-    #submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    #submit-btn:active:not(:disabled) { opacity: 0.85; }
+    #submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    #submit-btn:active:not(:disabled) { transform: scale(0.98); }
 
+    /* Toast */
     .toast {
-      position: fixed;
-      bottom: 24px; left: 50%;
+      position: fixed; bottom: 20px; left: 50%;
       transform: translateX(-50%);
-      background: #252b3d;
-      color: var(--text);
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 13px;
-      border: 1px solid var(--border);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 999;
+      background: #1e2d42; color: var(--text);
+      padding: 10px 18px; border-radius: 20px; font-size: 13px;
+      border: 1px solid var(--border2);
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+      z-index: 999; white-space: nowrap;
     }
     .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>🎓 CampusConnect</h1>
-  <p>Nigeria's Student Network</p>
+<div class="hero">
+  <div class="hero-icon">🎓</div>
+  <h1>CampusConnect</h1>
+  <p>Nigeria's Student Network — Join thousands of students</p>
 </div>
 
-<!-- Personal Info -->
-<div class="card">
-  <div class="card-title">Personal Info</div>
+<div class="progress-wrap">
+  <div class="prog-step" id="p1"></div>
+  <div class="prog-step" id="p2"></div>
+  <div class="prog-step" id="p3"></div>
+  <div class="prog-step" id="p4"></div>
+  <div class="prog-step" id="p5"></div>
+</div>
 
-  <div class="field">
-    <label>Full Name <span class="req">*</span></label>
-    <input type="text" id="full_name" placeholder="e.g. Adewale Okafor" maxlength="60" />
-    <div class="err-msg" id="err-name">Name must be 3–60 characters</div>
+<!-- Personal -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon blue">👤</div>
+    <span class="section-title">Personal Info</span>
   </div>
+  <div class="card">
 
-  <div class="field">
-    <label>Date of Birth <span class="req">*</span></label>
-    <input type="date" id="date_of_birth" max="" />
-    <div class="err-msg" id="err-dob">Please enter a valid date of birth</div>
+    <div class="field">
+      <label>Full Name <span class="req">*</span></label>
+      <input type="text" id="full_name" placeholder="e.g. Adewale Okafor" maxlength="60" />
+      <div class="err-msg" id="err-name">Name must be 3–60 characters</div>
+    </div>
+
+    <div class="field">
+      <label>Date of Birth <span class="req">*</span> <span style="color:var(--text3);font-weight:400">(Day & Month only)</span></label>
+      <div class="hint">
+        <span class="hint-icon">🎂</span>
+        <span>We collect your birthday so we can celebrate you! Your birth year stays private.</span>
+      </div>
+      <div class="dob-row" style="margin-top:4px">
+        <button type="button" class="modal-trigger" id="dob-day-trigger" onclick="openModal('day-modal')">
+          <span id="dob-day-display">Day</span>
+          <span class="modal-trigger-chevron">▼</span>
+        </button>
+        <button type="button" class="modal-trigger" id="dob-month-trigger" onclick="openModal('month-modal')">
+          <span id="dob-month-display">Month</span>
+          <span class="modal-trigger-chevron">▼</span>
+        </button>
+      </div>
+      <input type="hidden" id="dob_day" />
+      <input type="hidden" id="dob_month" />
+      <div class="err-msg" id="err-dob">Please select your birth day and month</div>
+    </div>
+
+    <div class="field">
+      <label>Gender <span class="req">*</span></label>
+      <button type="button" class="modal-trigger" id="gender-trigger" onclick="openModal('gender-modal')">
+        <span id="gender-display">Select your gender…</span>
+        <span class="modal-trigger-chevron">▼</span>
+      </button>
+      <input type="hidden" id="gender-value" />
+      <div class="err-msg" id="err-gender">Please select your gender</div>
+    </div>
+
   </div>
 </div>
 
 <!-- Contact -->
-<div class="card">
-  <div class="card-title">Contact</div>
-
-  <div class="field">
-    <label>WhatsApp Number <span class="req">*</span></label>
-    <div class="phone-row">
-      <span class="phone-prefix">🇳🇬 +234</span>
-      <input type="tel" id="whatsapp_number" placeholder="8012345678" maxlength="10" inputmode="numeric" />
-    </div>
-    <div class="err-msg" id="err-wa">Enter a valid 10-digit Nigerian number (without the leading 0)</div>
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <div class="section-icon green">📱</div>
+    <span class="section-title">Contact</span>
   </div>
+  <div class="card">
 
-  <div class="field">
-    <div class="toggle-row">
-      <div>
-        <div class="toggle-label">Show WhatsApp to others?</div>
-        <div class="toggle-sub">Others can see your number on your profile</div>
+    <div class="field">
+      <label>WhatsApp Number <span class="req">*</span></label>
+      <div class="phone-row">
+        <span class="phone-prefix">🇳🇬 +234</span>
+        <input type="tel" id="whatsapp_number" placeholder="8012345678" maxlength="10" inputmode="numeric" />
       </div>
-      <label class="toggle">
-        <input type="checkbox" id="show_whatsapp" checked />
-        <span class="slider"></span>
-      </label>
+      <div class="err-msg" id="err-wa">Enter a valid 10-digit Nigerian number (without leading 0)</div>
     </div>
+
+    <div class="field">
+      <div class="toggle-row">
+        <div class="toggle-text">
+          <div class="tl">Show WhatsApp to others?</div>
+          <div class="ts">Others can see your number on your profile</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="show_whatsapp" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <!-- Academic -->
-<div class="card">
-  <div class="card-title">Academic Info</div>
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <div class="section-icon purple">🏫</div>
+    <span class="section-title">Academic Info</span>
+  </div>
+  <div class="card">
 
-  <div class="field">
-    <label>University <span class="req">*</span></label>
-    <div class="school-wrap">
-      <input type="text" id="school_search" placeholder="Search your school…" autocomplete="off" />
-      <div id="school-results"></div>
+    <div class="field">
+      <label>University <span class="req">*</span></label>
+      <button type="button" class="modal-trigger" id="school-trigger" onclick="openModal('school-modal')">
+        <span id="school-display">Tap to browse or search your school…</span>
+        <span class="modal-trigger-chevron">▼</span>
+      </button>
+      <input type="hidden" id="school" />
+      <div class="err-msg" id="err-school">Please select a university from the list</div>
     </div>
-    <input type="hidden" id="school" />
-    <div class="err-msg" id="err-school">Please select a university from the list</div>
-  </div>
 
-  <div class="field">
-    <label>Department <span class="req">*</span></label>
-    <input type="text" id="department" placeholder="e.g. Computer Science" maxlength="80" />
-    <div class="err-msg" id="err-dept">Department must be at least 2 characters</div>
-  </div>
+    <div class="field">
+      <label>Department <span class="req">*</span></label>
+      <input type="text" id="department" placeholder="e.g. Computer Science" maxlength="80" />
+      <div class="err-msg" id="err-dept">Department must be at least 2 characters</div>
+    </div>
 
-  <div class="field">
-    <label>Level <span class="req">*</span></label>
-    <select id="level">
-      <option value="">— Select Level —</option>
-      <option>100 Level</option>
-      <option>200 Level</option>
-      <option>300 Level</option>
-      <option>400 Level</option>
-      <option>500 Level</option>
-      <option>600 Level</option>
-      <option>Postgraduate</option>
-    </select>
-    <div class="err-msg" id="err-level">Please select your current level</div>
+    <div class="field">
+      <label>Level <span class="req">*</span></label>
+      <button type="button" class="modal-trigger" id="level-trigger" onclick="openModal('level-modal')">
+        <span id="level-display">Select Level…</span>
+        <span class="modal-trigger-chevron">▼</span>
+      </button>
+      <input type="hidden" id="level" />
+      <div class="err-msg" id="err-level">Please select your current level</div>
+    </div>
+
   </div>
 </div>
 
 <!-- Location -->
-<div class="card">
-  <div class="card-title">Location</div>
-  <div class="field">
-    <label>State of Origin <span class="req">*</span></label>
-    <select id="state">
-      <option value="">— Select State —</option>
-      <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option>
-      <option>Anambra</option><option>Bauchi</option><option>Bayelsa</option>
-      <option>Benue</option><option>Borno</option><option>Cross River</option>
-      <option>Delta</option><option>Ebonyi</option><option>Edo</option>
-      <option>Ekiti</option><option>Enugu</option><option>FCT</option>
-      <option>Gombe</option><option>Imo</option><option>Jigawa</option>
-      <option>Kaduna</option><option>Kano</option><option>Katsina</option>
-      <option>Kebbi</option><option>Kogi</option><option>Kwara</option>
-      <option>Lagos</option><option>Nasarawa</option><option>Niger</option>
-      <option>Ogun</option><option>Ondo</option><option>Osun</option>
-      <option>Oyo</option><option>Plateau</option><option>Rivers</option>
-      <option>Sokoto</option><option>Taraba</option><option>Yobe</option>
-      <option>Zamfara</option>
-    </select>
-    <div class="err-msg" id="err-state">Please select your state</div>
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <div class="section-icon orange">📍</div>
+    <span class="section-title">Location</span>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label>State of Origin <span class="req">*</span></label>
+      <button type="button" class="modal-trigger" id="state-trigger" onclick="openModal('state-modal')">
+        <span id="state-display">Select State…</span>
+        <span class="modal-trigger-chevron">▼</span>
+      </button>
+      <input type="hidden" id="state" />
+      <div class="err-msg" id="err-state">Please select your state</div>
+    </div>
   </div>
 </div>
 
 <!-- Interests -->
-<div class="card">
-  <div class="card-title">Interests <span style="color:var(--muted);font-weight:400;font-size:12px">(pick 1–5)</span></div>
-  <div class="field">
-    <div id="interests-grid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
-    <div class="err-msg" id="err-interests">Please select at least one interest</div>
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <div class="section-icon pink">✨</div>
+    <span class="section-title">Interests <span style="color:var(--text3);font-size:11px;font-weight:400;text-transform:none;letter-spacing:0">(pick 1–5)</span></span>
+  </div>
+  <div class="card">
+    <div class="field">
+      <div id="interests-grid"></div>
+      <div class="err-msg" id="err-interests">Please select at least one interest</div>
+    </div>
   </div>
 </div>
 
 <!-- Bio -->
-<div class="card">
-  <div class="card-title">Bio</div>
-  <div class="field">
-    <label>Short Bio <span style="color:var(--muted);font-weight:400">(optional, max 200 chars)</span></label>
-    <textarea id="bio" placeholder="e.g. Tech enthusiast, building the next big app. Open to collabs!" maxlength="200"
-      style="width:100%;padding:11px 13px;background:#0e1117;border:1px solid var(--border);border-radius:8px;
-             color:var(--text);font-size:15px;outline:none;resize:vertical;min-height:72px;
-             font-family:inherit;transition:border-color 0.2s;"></textarea>
-    <div style="text-align:right;font-size:11px;color:var(--muted);margin-top:3px"><span id="bio-count">0</span>/200</div>
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <div class="section-icon blue">✍️</div>
+    <span class="section-title">Bio <span style="color:var(--text3);font-size:11px;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></span>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label>Short Bio <span style="color:var(--text3);font-weight:400">(optional, max 200 chars)</span></label>
+      <textarea id="bio" placeholder="e.g. Tech enthusiast, building the next big app. Open to collabs!" maxlength="200"></textarea>
+      <div class="char-count"><span id="bio-count">0</span>/200</div>
+    </div>
   </div>
 </div>
 
 <button id="submit-btn">Join CampusConnect 🚀</button>
 <div class="toast" id="toast"></div>
 
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- Gender Modal -->
+<div class="modal-overlay" id="gender-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Select Gender</div>
+    <div class="modal-list">
+      <div class="modal-option" data-value="Male" data-display="👨 Male" onclick="pickGender(this)">
+        <div class="modal-option-icon blue">👨</div>
+        <div class="modal-option-label"><div class="modal-option-name">Male</div></div>
+        <span class="modal-check">✓</span>
+      </div>
+      <div class="modal-option" data-value="Female" data-display="👩 Female" onclick="pickGender(this)">
+        <div class="modal-option-icon pink">👩</div>
+        <div class="modal-option-label"><div class="modal-option-name">Female</div></div>
+        <span class="modal-check">✓</span>
+      </div>
+      <div class="modal-option" data-value="Prefer not to say" data-display="🙂 Prefer not to say" onclick="pickGender(this)">
+        <div class="modal-option-icon green">🙂</div>
+        <div class="modal-option-label"><div class="modal-option-name">Prefer not to say</div></div>
+        <span class="modal-check">✓</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Day Modal -->
+<div class="modal-overlay" id="day-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Select Day</div>
+    <div class="modal-list" id="day-list"></div>
+  </div>
+</div>
+
+<!-- Month Modal -->
+<div class="modal-overlay" id="month-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Select Month</div>
+    <div class="modal-list" id="month-list"></div>
+  </div>
+</div>
+
+<!-- Level Modal -->
+<div class="modal-overlay" id="level-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Select Level</div>
+    <div class="modal-list" id="level-list"></div>
+  </div>
+</div>
+
+<!-- State Modal -->
+<div class="modal-overlay" id="state-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">State of Origin</div>
+    <div class="modal-search-wrap">
+      <input type="text" id="state-search" placeholder="Search state…" autocomplete="off" oninput="filterStates()" />
+    </div>
+    <div class="modal-list" id="state-list"></div>
+  </div>
+</div>
+
+<!-- School Modal -->
+<div class="modal-overlay" id="school-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Select University</div>
+    <div class="modal-search-wrap">
+      <input type="text" id="school-search" placeholder="Search by name or abbreviation…" autocomplete="off" oninput="filterSchools()" />
+    </div>
+    <div class="modal-list" id="school-list"></div>
+  </div>
+</div>
+
 <script>
-  // ── Telegram WebApp init ──
   const tg = window.Telegram.WebApp;
   tg.ready();
   tg.expand();
 
-  // ── DOB max = today ──
-  document.getElementById('date_of_birth').max = new Date().toISOString().split('T')[0];
+  // ── Modal open/close ──
+  let currentModal = null;
+  function openModal(id) {
+    if (currentModal) currentModal.classList.remove('open');
+    const m = document.getElementById(id);
+    m.classList.add('open');
+    currentModal = m;
+    // clear search inputs when opening
+    const si = m.querySelector('input[type="text"]');
+    if (si) { si.value = ''; si.dispatchEvent(new Event('input')); }
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    currentModal = null;
+  }
+  // close on backdrop click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // ── Gender ──
+  function pickGender(el) {
+    document.querySelectorAll('#gender-modal .modal-option').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('gender-value').value = el.dataset.value;
+    const trigger = document.getElementById('gender-trigger');
+    document.getElementById('gender-display').textContent = el.dataset.display;
+    trigger.classList.add('selected');
+    trigger.classList.remove('error');
+    document.getElementById('err-gender').classList.remove('show');
+    setTimeout(() => closeModal('gender-modal'), 180);
+    updateProgress();
+  }
+
+  // ── Day list ──
+  const dayList = document.getElementById('day-list');
+  for (let d = 1; d <= 31; d++) {
+    const val = String(d).padStart(2,'0');
+    const el = document.createElement('div');
+    el.className = 'list-option';
+    el.dataset.value = val;
+    el.innerHTML = `<span>${d}</span><span class="list-check">✓</span>`;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('#day-list .list-option').forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('dob_day').value = val;
+      document.getElementById('dob-day-display').textContent = d;
+      document.getElementById('dob-day-trigger').classList.add('selected');
+      document.getElementById('err-dob').classList.remove('show');
+      setTimeout(() => closeModal('day-modal'), 180);
+      updateProgress();
+    });
+    dayList.appendChild(el);
+  }
+
+  // ── Month list ──
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const monthList = document.getElementById('month-list');
+  MONTHS.forEach((name, i) => {
+    const val = String(i+1).padStart(2,'0');
+    const el = document.createElement('div');
+    el.className = 'list-option';
+    el.dataset.value = val;
+    el.innerHTML = `<span>${name}</span><span class="list-check">✓</span>`;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('#month-list .list-option').forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('dob_month').value = val;
+      document.getElementById('dob-month-display').textContent = name;
+      document.getElementById('dob-month-trigger').classList.add('selected');
+      document.getElementById('err-dob').classList.remove('show');
+      setTimeout(() => closeModal('month-modal'), 180);
+      updateProgress();
+    });
+    monthList.appendChild(el);
+  });
+
+  // ── Level list ──
+  const LEVELS = ['100 Level','200 Level','300 Level','400 Level','500 Level','600 Level','Postgraduate'];
+  const levelList = document.getElementById('level-list');
+  LEVELS.forEach(lv => {
+    const el = document.createElement('div');
+    el.className = 'list-option';
+    el.innerHTML = `<span>${lv}</span><span class="list-check">✓</span>`;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('#level-list .list-option').forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('level').value = lv;
+      document.getElementById('level-display').textContent = lv;
+      document.getElementById('level-trigger').classList.add('selected');
+      document.getElementById('level-trigger').classList.remove('error');
+      document.getElementById('err-level').classList.remove('show');
+      setTimeout(() => closeModal('level-modal'), 180);
+    });
+    levelList.appendChild(el);
+  });
+
+  // ── State list ──
+  const STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno',
+    'Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo','Jigawa',
+    'Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun',
+    'Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
+  const stateListEl = document.getElementById('state-list');
+
+  function buildStateList(filter='') {
+    const q = filter.toLowerCase().trim();
+    const filtered = q ? STATES.filter(s => s.toLowerCase().includes(q)) : STATES;
+    stateListEl.innerHTML = '';
+    if (!filtered.length) {
+      stateListEl.innerHTML = '<div class="no-results">No state found</div>';
+      return;
+    }
+    const curVal = document.getElementById('state').value;
+    filtered.forEach(st => {
+      const el = document.createElement('div');
+      el.className = 'list-option' + (curVal === st ? ' active' : '');
+      el.innerHTML = `<span>${st}</span><span class="list-check">✓</span>`;
+      el.addEventListener('click', () => {
+        document.getElementById('state').value = st;
+        document.getElementById('state-display').textContent = st;
+        document.getElementById('state-trigger').classList.add('selected');
+        document.getElementById('state-trigger').classList.remove('error');
+        document.getElementById('err-state').classList.remove('show');
+        setTimeout(() => closeModal('state-modal'), 180);
+      });
+      stateListEl.appendChild(el);
+    });
+  }
+  function filterStates() {
+    buildStateList(document.getElementById('state-search').value);
+  }
+  buildStateList();
+
+  // ── Schools ──
+  const SCHOOLS = [
+    { name: "University of Lagos", abbr: "UNILAG", type: "federal" },
+    { name: "University of Ibadan", abbr: "UI", type: "federal" },
+    { name: "Obafemi Awolowo University", abbr: "OAU", type: "federal" },
+    { name: "University of Nigeria, Nsukka", abbr: "UNN", type: "federal" },
+    { name: "Ahmadu Bello University", abbr: "ABU", type: "federal" },
+    { name: "University of Benin", abbr: "UNIBEN", type: "federal" },
+    { name: "University of Port Harcourt", abbr: "UNIPORT", type: "federal" },
+    { name: "Federal University of Technology, Akure", abbr: "FUTA", type: "federal" },
+    { name: "Federal University, Oye-Ekiti", abbr: "FUOYE", type: "federal" },
+    { name: "Nnamdi Azikiwe University", abbr: "NAU", type: "federal" },
+    { name: "University of Calabar", abbr: "UNICAL", type: "federal" },
+    { name: "Bayero University Kano", abbr: "BUK", type: "federal" },
+    { name: "University of Ilorin", abbr: "UNILORIN", type: "federal" },
+    { name: "University of Jos", abbr: "UNIJOS", type: "federal" },
+    { name: "University of Maiduguri", abbr: "UNIMAID", type: "federal" },
+    { name: "Michael Okpara University of Agriculture", abbr: "MOUAU", type: "federal" },
+    { name: "Federal University of Technology, Owerri", abbr: "FUTO", type: "federal" },
+    { name: "Federal University, Dutsin-Ma", abbr: "FUDMA", type: "federal" },
+    { name: "Ekiti State University", abbr: "EKSU", type: "state" },
+    { name: "Lagos State University", abbr: "LASU", type: "state" },
+    { name: "Osun State University", abbr: "UNIOSUN", type: "state" },
+    { name: "Ondo State University of Science and Technology", abbr: "OSUSTECH", type: "state" },
+    { name: "Olabisi Onabanjo University", abbr: "OOU", type: "state" },
+    { name: "Adekunle Ajasin University", abbr: "AAUA", type: "state" },
+    { name: "Ambrose Alli University", abbr: "AAU", type: "state" },
+    { name: "Delta State University", abbr: "DELSU", type: "state" },
+    { name: "Anambra State University", abbr: "ANSU", type: "state" },
+    { name: "Enugu State University", abbr: "ESUT", type: "state" },
+    { name: "Kogi State University", abbr: "KSU", type: "state" },
+    { name: "Kwara State University", abbr: "KWASU", type: "state" },
+    { name: "Plateau State University", abbr: "PLASU", type: "state" },
+    { name: "Abia State University", abbr: "ABSU", type: "state" },
+    { name: "Cross River University of Technology", abbr: "CRUTECH", type: "state" },
+    { name: "Imo State University", abbr: "IMSU", type: "state" },
+    { name: "Nasarawa State University", abbr: "NSUK", type: "state" },
+    { name: "Rivers State University", abbr: "RSU", type: "state" },
+    { name: "Ebonyi State University", abbr: "EBSU", type: "state" },
+    { name: "Covenant University", abbr: "CU", type: "private" },
+    { name: "Babcock University", abbr: "BABCOCK", type: "private" },
+    { name: "Redeemer's University", abbr: "RUN", type: "private" },
+    { name: "Pan-Atlantic University", abbr: "PAU", type: "private" },
+    { name: "Bowen University", abbr: "BOWEN", type: "private" },
+    { name: "Baze University", abbr: "BAZE", type: "private" },
+    { name: "Landmark University", abbr: "LMU", type: "private" },
+    { name: "American University of Nigeria", abbr: "AUN", type: "private" },
+    { name: "Crawford University", abbr: "CRAWFORD", type: "private" },
+    { name: "Lead City University", abbr: "LCU", type: "private" },
+    { name: "Yaba College of Technology", abbr: "YABATECH", type: "poly" },
+    { name: "Federal Polytechnic, Ede", abbr: "FEDPOEDE", type: "poly" },
+    { name: "Osun State Polytechnic", abbr: "OSPOLY", type: "poly" },
+    { name: "Moshood Abiola Polytechnic", abbr: "MAPOLY", type: "poly" },
+    { name: "Federal Polytechnic, Nekede", abbr: "NEKEDE", type: "poly" },
+    { name: "Federal Polytechnic, Ilaro", abbr: "ILARO", type: "poly" },
+    { name: "Rufus Giwa Polytechnic", abbr: "RUGIPO", type: "poly" },
+    { name: "The Polytechnic, Ibadan", abbr: "POLYIBADAN", type: "poly" },
+  ];
+  const TYPE_LABEL = { federal:"Federal", state:"State", private:"Private", poly:"Poly" };
+  const schoolListEl = document.getElementById('school-list');
+
+  function buildSchoolList(filter='') {
+    const q = filter.toLowerCase().trim();
+    const list = q
+      ? SCHOOLS.filter(s => s.name.toLowerCase().includes(q) || s.abbr.toLowerCase().includes(q))
+      : SCHOOLS;
+    schoolListEl.innerHTML = '';
+    if (!list.length) {
+      schoolListEl.innerHTML = '<div class="no-results">No school found</div>';
+      return;
+    }
+    const curVal = document.getElementById('school').value;
+    list.forEach(s => {
+      const el = document.createElement('div');
+      el.className = 'school-option' + (curVal === s.abbr ? ' active' : '');
+      el.innerHTML = `
+        <span class="school-name">${s.name}<span class="school-abbr">(${s.abbr})</span></span>
+        <span class="badge ${s.type}">${TYPE_LABEL[s.type]}</span>
+      `;
+      el.addEventListener('click', () => {
+        document.getElementById('school').value = s.abbr;
+        document.getElementById('school-display').textContent = s.name + ' (' + s.abbr + ')';
+        document.getElementById('school-trigger').classList.add('selected');
+        document.getElementById('school-trigger').classList.remove('error');
+        document.getElementById('err-school').classList.remove('show');
+        setTimeout(() => { closeModal('school-modal'); updateProgress(); }, 180);
+      });
+      schoolListEl.appendChild(el);
+    });
+  }
+  function filterSchools() {
+    buildSchoolList(document.getElementById('school-search').value);
+  }
+  buildSchoolList();
 
   // ── Interests ──
   const INTERESTS = [
@@ -378,152 +887,46 @@
   const grid = document.getElementById('interests-grid');
   INTERESTS.forEach(interest => {
     const chip = document.createElement('div');
+    chip.className = 'chip';
     chip.textContent = interest;
-    chip.dataset.value = interest;
-    chip.style.cssText = `padding:7px 12px;border-radius:20px;font-size:13px;cursor:pointer;
-      border:1px solid var(--border);background:#0e1117;color:var(--muted);transition:all 0.15s;`;
     chip.addEventListener('click', () => {
       if (selectedInterests.includes(interest)) {
         selectedInterests = selectedInterests.filter(i => i !== interest);
-        chip.style.background = '#0e1117';
-        chip.style.color = 'var(--muted)';
-        chip.style.borderColor = 'var(--border)';
+        chip.classList.remove('selected');
       } else {
         if (selectedInterests.length >= 5) { showToast('⚠️ Max 5 interests'); return; }
         selectedInterests.push(interest);
-        chip.style.background = 'var(--accent)';
-        chip.style.color = 'white';
-        chip.style.borderColor = 'var(--accent)';
+        chip.classList.add('selected');
       }
-      clearError('interests-grid', 'err-interests');
+      document.getElementById('err-interests').classList.remove('show');
+      updateProgress();
     });
     grid.appendChild(chip);
   });
 
   // ── Bio counter ──
-  const bioEl = document.getElementById('bio');
-  const bioCount = document.getElementById('bio-count');
-  bioEl.addEventListener('input', () => { bioCount.textContent = bioEl.value.length; });
-
-  // ── Nigerian Universities ──
-  const SCHOOLS = [
-    // Federal Universities
-    { name: "University of Lagos (UNILAG)", abbr: "UNILAG", type: "federal" },
-    { name: "University of Ibadan (UI)", abbr: "UI", type: "federal" },
-    { name: "Obafemi Awolowo University (OAU)", abbr: "OAU", type: "federal" },
-    { name: "University of Nigeria, Nsukka (UNN)", abbr: "UNN", type: "federal" },
-    { name: "Ahmadu Bello University (ABU)", abbr: "ABU", type: "federal" },
-    { name: "University of Benin (UNIBEN)", abbr: "UNIBEN", type: "federal" },
-    { name: "University of Port Harcourt (UNIPORT)", abbr: "UNIPORT", type: "federal" },
-    { name: "Federal University of Technology, Akure (FUTA)", abbr: "FUTA", type: "federal" },
-    { name: "Federal University, Oye-Ekiti (FUOYE)", abbr: "FUOYE", type: "federal" },
-    { name: "Nnamdi Azikiwe University (NAU)", abbr: "NAU", type: "federal" },
-    { name: "University of Calabar (UNICAL)", abbr: "UNICAL", type: "federal" },
-    { name: "Bayero University Kano (BUK)", abbr: "BUK", type: "federal" },
-    { name: "University of Ilorin (UNILORIN)", abbr: "UNILORIN", type: "federal" },
-    { name: "University of Jos (UNIJOS)", abbr: "UNIJOS", type: "federal" },
-    { name: "University of Maiduguri (UNIMAID)", abbr: "UNIMAID", type: "federal" },
-    { name: "Michael Okpara University of Agriculture (MOUAU)", abbr: "MOUAU", type: "federal" },
-    { name: "Federal University of Technology, Owerri (FUTO)", abbr: "FUTO", type: "federal" },
-    { name: "Federal University, Dutsin-Ma (FUDMA)", abbr: "FUDMA", type: "federal" },
-    // State Universities
-    { name: "Ekiti State University (EKSU)", abbr: "EKSU", type: "state" },
-    { name: "Lagos State University (LASU)", abbr: "LASU", type: "state" },
-    { name: "Osun State University (UNIOSUN)", abbr: "UNIOSUN", type: "state" },
-    { name: "Ondo State University of Science and Technology (OSUSTECH)", abbr: "OSUSTECH", type: "state" },
-    { name: "Olabisi Onabanjo University (OOU)", abbr: "OOU", type: "state" },
-    { name: "Adekunle Ajasin University (AAUA)", abbr: "AAUA", type: "state" },
-    { name: "Ambrose Alli University (AAU)", abbr: "AAU", type: "state" },
-    { name: "Delta State University (DELSU)", abbr: "DELSU", type: "state" },
-    { name: "Anambra State University (ANSU)", abbr: "ANSU", type: "state" },
-    { name: "Enugu State University (ESUT)", abbr: "ESUT", type: "state" },
-    { name: "Kogi State University (KSU)", abbr: "KSU", type: "state" },
-    { name: "Kwara State University (KWASU)", abbr: "KWASU", type: "state" },
-    { name: "Plateau State University (PLASU)", abbr: "PLASU", type: "state" },
-    { name: "Abia State University (ABSU)", abbr: "ABSU", type: "state" },
-    { name: "Cross River University of Technology (CRUTECH)", abbr: "CRUTECH", type: "state" },
-    { name: "Imo State University (IMSU)", abbr: "IMSU", type: "state" },
-    { name: "Nasarawa State University (NSUK)", abbr: "NSUK", type: "state" },
-    { name: "Rivers State University (RSU)", abbr: "RSU", type: "state" },
-    { name: "Ebonyi State University (EBSU)", abbr: "EBSU", type: "state" },
-    // Private Universities
-    { name: "Covenant University (CU)", abbr: "CU", type: "private" },
-    { name: "Babcock University", abbr: "BABCOCK", type: "private" },
-    { name: "Redeemer's University (RUN)", abbr: "RUN", type: "private" },
-    { name: "Pan-Atlantic University (PAU)", abbr: "PAU", type: "private" },
-    { name: "Bowen University", abbr: "BOWEN", type: "private" },
-    { name: "Baze University", abbr: "BAZE", type: "private" },
-    { name: "Landmark University", abbr: "LMU", type: "private" },
-    { name: "American University of Nigeria (AUN)", abbr: "AUN", type: "private" },
-    { name: "Crawford University", abbr: "CRAWFORD", type: "private" },
-    { name: "Lead City University", abbr: "LCU", type: "private" },
-    // Polytechnics
-    { name: "Yaba College of Technology (YABATECH)", abbr: "YABATECH", type: "poly" },
-    { name: "Federal Polytechnic, Ede", abbr: "FEDPOEDE", type: "poly" },
-    { name: "Osun State Polytechnic (OSPOLY)", abbr: "OSPOLY", type: "poly" },
-    { name: "Moshood Abiola Polytechnic (MAPOLY)", abbr: "MAPOLY", type: "poly" },
-    { name: "Federal Polytechnic, Nekede", abbr: "NEKEDE", type: "poly" },
-    { name: "Federal Polytechnic, Ilaro", abbr: "ILARO", type: "poly" },
-    { name: "Rufus Giwa Polytechnic (RUGIPO)", abbr: "RUGIPO", type: "poly" },
-    { name: "The Polytechnic, Ibadan", abbr: "POLYIBADAN", type: "poly" },
-  ];
-
-  const TYPE_LABEL = { federal: "Federal", state: "State", private: "Private", poly: "Poly" };
-
-  let selectedSchool = "";
-  const searchInput = document.getElementById('school_search');
-  const resultsBox = document.getElementById('school-results');
-  const schoolHidden = document.getElementById('school');
-
-  function renderResults(query) {
-    const q = query.toLowerCase().trim();
-    if (!q) { resultsBox.style.display = 'none'; return; }
-    const matches = SCHOOLS.filter(s =>
-      s.name.toLowerCase().includes(q) || s.abbr.toLowerCase().includes(q)
-    ).slice(0, 8);
-    if (!matches.length) { resultsBox.style.display = 'none'; return; }
-    resultsBox.innerHTML = matches.map(s =>
-      `<div class="school-item" data-abbr="${s.abbr}" data-name="${s.name}" data-type="${s.type}">
-        ${s.name} <span class="badge ${s.type}">${TYPE_LABEL[s.type]}</span>
-      </div>`
-    ).join('');
-    resultsBox.style.display = 'block';
-  }
-
-  searchInput.addEventListener('input', () => {
-    selectedSchool = "";
-    schoolHidden.value = "";
-    renderResults(searchInput.value);
+  document.getElementById('bio').addEventListener('input', function() {
+    document.getElementById('bio-count').textContent = this.value.length;
   });
 
-  resultsBox.addEventListener('click', e => {
-    const item = e.target.closest('.school-item');
-    if (!item) return;
-    selectedSchool = item.dataset.abbr;
-    schoolHidden.value = selectedSchool;
-    searchInput.value = item.dataset.name;
-    resultsBox.style.display = 'none';
-    clearError('school_search', 'err-school');
-  });
-
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.school-wrap')) resultsBox.style.display = 'none';
-  });
-
-  // ── Validation helpers ──
-  function showError(inputId, errId) {
-    document.getElementById(inputId)?.classList.add('error');
-    document.getElementById(errId)?.classList.add('show');
+  // ── Progress ──
+  function updateProgress() {
+    const steps = [
+      document.getElementById('full_name').value.trim().length >= 3,
+      !!(document.getElementById('dob_day').value && document.getElementById('dob_month').value),
+      document.getElementById('whatsapp_number').value.trim().replace(/\D/g,'').length === 10,
+      document.getElementById('school').value !== '',
+      selectedInterests.length > 0
+    ];
+    steps.forEach((done, i) => document.getElementById('p'+(i+1)).classList.toggle('done', done));
   }
-  function clearError(inputId, errId) {
-    document.getElementById(inputId)?.classList.remove('error');
-    document.getElementById(errId)?.classList.remove('show');
-  }
+  document.getElementById('full_name').addEventListener('input', updateProgress);
+  document.getElementById('whatsapp_number').addEventListener('input', updateProgress);
 
+  // ── Toast ──
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
+    t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2800);
   }
 
@@ -533,41 +936,73 @@
 
     const name = document.getElementById('full_name').value.trim();
     if (name.length < 3 || name.length > 60) {
-      showError('full_name', 'err-name'); valid = false;
-    } else clearError('full_name', 'err-name');
+      document.getElementById('full_name').classList.add('error');
+      document.getElementById('err-name').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('full_name').classList.remove('error');
+      document.getElementById('err-name').classList.remove('show');
+    }
 
-    const dob = document.getElementById('date_of_birth').value;
-    const dobYear = dob ? new Date(dob).getFullYear() : 0;
-    if (!dob || dobYear < 1980 || new Date(dob) > new Date()) {
-      showError('date_of_birth', 'err-dob'); valid = false;
-    } else clearError('date_of_birth', 'err-dob');
+    const day = document.getElementById('dob_day').value;
+    const month = document.getElementById('dob_month').value;
+    if (!day || !month) {
+      document.getElementById('err-dob').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('err-dob').classList.remove('show');
+    }
 
-    const waRaw = document.getElementById('whatsapp_number').value.trim().replace(/\D/g, '');
-    const waValid = waRaw.length === 10 && !waRaw.startsWith('0');
-    if (!waValid) {
-      showError('whatsapp_number', 'err-wa'); valid = false;
-    } else clearError('whatsapp_number', 'err-wa');
+    const gender = document.getElementById('gender-value').value;
+    if (!gender) {
+      document.getElementById('gender-trigger').classList.add('error');
+      document.getElementById('err-gender').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('gender-trigger').classList.remove('error');
+      document.getElementById('err-gender').classList.remove('show');
+    }
 
-    if (!schoolHidden.value) {
-      showError('school_search', 'err-school'); valid = false;
-    } else clearError('school_search', 'err-school');
+    const waRaw = document.getElementById('whatsapp_number').value.trim().replace(/\D/g,'');
+    if (waRaw.length !== 10 || waRaw.startsWith('0')) {
+      document.getElementById('whatsapp_number').classList.add('error');
+      document.getElementById('err-wa').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('whatsapp_number').classList.remove('error');
+      document.getElementById('err-wa').classList.remove('show');
+    }
+
+    if (!document.getElementById('school').value) {
+      document.getElementById('school-trigger').classList.add('error');
+      document.getElementById('err-school').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('school-trigger').classList.remove('error');
+      document.getElementById('err-school').classList.remove('show');
+    }
 
     const dept = document.getElementById('department').value.trim();
     if (dept.length < 2) {
-      showError('department', 'err-dept'); valid = false;
-    } else clearError('department', 'err-dept');
+      document.getElementById('department').classList.add('error');
+      document.getElementById('err-dept').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('department').classList.remove('error');
+      document.getElementById('err-dept').classList.remove('show');
+    }
 
-    const level = document.getElementById('level').value;
-    if (!level) {
-      showError('level', 'err-level'); valid = false;
-    } else clearError('level', 'err-level');
+    if (!document.getElementById('level').value) {
+      document.getElementById('level-trigger').classList.add('error');
+      document.getElementById('err-level').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('level-trigger').classList.remove('error');
+      document.getElementById('err-level').classList.remove('show');
+    }
 
-    const state = document.getElementById('state').value;
-    if (!state) {
-      showError('state', 'err-state'); valid = false;
-    } else clearError('state', 'err-state');
+    if (!document.getElementById('state').value) {
+      document.getElementById('state-trigger').classList.add('error');
+      document.getElementById('err-state').classList.add('show'); valid = false;
+    } else {
+      document.getElementById('state-trigger').classList.remove('error');
+      document.getElementById('err-state').classList.remove('show');
+    }
 
-    if (selectedInterests.length === 0) {
+    if (!selectedInterests.length) {
       document.getElementById('err-interests').classList.add('show'); valid = false;
     } else {
       document.getElementById('err-interests').classList.remove('show');
@@ -576,22 +1011,21 @@
     if (!valid) { showToast('⚠️ Please fix the errors above'); return; }
 
     const btn = document.getElementById('submit-btn');
-    btn.disabled = true;
-    btn.textContent = 'Submitting…';
+    btn.disabled = true; btn.textContent = 'Submitting…';
 
     const payload = {
       full_name: name,
       whatsapp_number: '+234' + waRaw,
-      school: schoolHidden.value,
+      school: document.getElementById('school').value,
       department: dept,
-      date_of_birth: dob,
+      date_of_birth: month + '-' + day,
+      gender: gender,
       show_whatsapp: document.getElementById('show_whatsapp').checked,
-      level: level,
-      state: state,
+      level: document.getElementById('level').value,
+      state: document.getElementById('state').value,
       interests: selectedInterests,
-      bio: bioEl.value.trim(),
+      bio: document.getElementById('bio').value.trim(),
     };
-
     tg.sendData(JSON.stringify(payload));
     tg.close();
   });
