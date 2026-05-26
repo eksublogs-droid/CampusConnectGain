@@ -319,6 +319,9 @@ async def set_bot_commands(app):
 # ─────────────────────────────────────
 
 def run_bot():
+    import asyncio
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
     token = os.getenv("BOT_TOKEN")
     if not token:
         raise ValueError("BOT_TOKEN not set in environment!")
